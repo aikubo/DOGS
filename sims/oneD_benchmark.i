@@ -98,6 +98,16 @@
   scheme = 'crank-nicolson'   #"implicit-euler, explicit-euler, crank-nicolson, bdf2, rk-2"
 []
 
+[VectorPostprocessors]
+  [t_sampler]
+    type = LineValueSampler
+    variable = T
+    start_point = '0 00 0'
+    end_point = '25 0 0'
+    num_points = 10
+    sort_by = x
+  []
+[]
 
 [Outputs]
   exodus = true
