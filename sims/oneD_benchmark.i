@@ -3,9 +3,9 @@
   [generated]
     type = GeneratedMeshGenerator
     dim = 2
-    nx = 10
+    nx = 25
     ny = 1
-    xmax = 10 # m
+    xmax = 25 # m
     ymax = 1
   []
 []
@@ -51,7 +51,7 @@
   [t_right]
     type = DirichletBC
     variable = T
-    value = 373 # C
+    value = 370 # C
     boundary = 'right'
   []
   [t_left]
@@ -67,7 +67,7 @@
     type=ParsedFunction
     expression = 'if(t<tw, 0.5*(Tl-Tb)*(1-tanh(10*(t-tc)/tw))+Tb, Tb)'
     symbol_names = 'Tl Tb tc tw'
-    symbol_values = '1413 373 5 1' #K K yr yr
+    symbol_values = '1413 373 5 2' #K K yr yr
   []
 
   [bc_func]
