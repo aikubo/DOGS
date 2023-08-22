@@ -30,7 +30,7 @@
   [t_wallrock]
     type = ConstantIC
     variable = T
-    value = 100 #C
+    value = 370 #C
   []
 []
 
