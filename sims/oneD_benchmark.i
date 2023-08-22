@@ -1,7 +1,3 @@
-# units
-#
-# 3153600 seconds in a year
-#
 
 [Mesh]
   [generated]
