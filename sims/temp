@@ -1,0 +1,18 @@
+
+[Functions]
+  [thermalBoundary]
+    type = ParsedFunction
+    expression = (Tl - Tb)/2*(1-tanh(10*((t-tc)/tw)))+Tb
+    symbol_names = 'Tl Tb tc tw'
+    symbol_values = '1 1 1 1'
+  []
+  [constantBoundary]
+    type=ConstantFunction
+    value = 300 #Tbackground
+  [bc_func]
+    type =PiecewiseFunction
+    axis = t
+    axis_coordinates = '1' #tf
+    functions = 'thermalBoundary constantBoundary'
+  []
+[]

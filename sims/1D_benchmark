@@ -1,0 +1,36 @@
+
+[Mesh]
+  [gen]
+    type = GeneratedMeshGenerator
+    dim = 3
+    nx = 10
+    ny = 10
+    xmax = 10
+    ymax = 10
+    nz = 5
+    zmax = 5
+  []
+  [dike]
+    type = SubdomainBoundingBoxGenerator
+    block_id = 1
+    bottom_left = '0 0 0'
+    top_right = '2 10 5'
+    block_name = dike
+    input = gen
+  []
+  [wallrock]
+    type = SubdomainBoundingBoxGenerator
+    block_id = 2
+    bottom_left = '2 0 0 '
+    top_right = '10 10 5'
+    block_name = wallrock
+    input = dike
+  []
+  [contact_area]
+    type = SideSetsBetweenSubdomainsGenerator
+    input = wallrock
+    primary_block = 'dike'
+    paired_block = 'wallrock'
+    new_boundary = 'dike_contact'
+  []
+[]
