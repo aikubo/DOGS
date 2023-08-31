@@ -16,11 +16,12 @@
 []
 
 [AuxVariables]
-  [PartialMeltHost]
-    order = FIRST
-    family = LAGRANGE
+  [PMH]
+    order = CONSTANT
+    family = MONOMIAL
   []
 []
+
 
 [Kernels]
   [heatC]
@@ -38,6 +39,7 @@
   [PartialMeltHost]
     type = PartialMeltHost
     temperature = T
+    variable = PMH
     value = 2
     execute_on = timestep_end
   []
@@ -47,7 +49,7 @@
   [t_wallrock]
     type = ConstantIC
     variable = T
-    value = 370 #C
+    value = 373 #K
   []
 []
 
@@ -68,7 +70,7 @@
   [t_right]
     type = DirichletBC
     variable = T
-    value = 370 # C
+    value = 373 # K
     boundary = 'right'
   []
   [t_left]
@@ -84,13 +86,21 @@
     type=ParsedFunction
     expression = 'if(t<tw, 0.5*(Tl-Tb)*(1-tanh(10*(t-tc)/tw))+Tb, Tb)'
     symbol_names = 'Tl Tb tc tw'
-    symbol_values = '1413 373 1825 1825' #K K yr yr
+    symbol_values = '1413 373 1825 1825' #K K days days
   []
 
   [bc_func]
     type = ParsedFunction
     expression = '373' #C
   []
+
+  [box_func]
+    type=ParsedFunction
+    expression = 'if(t<tw, Tl, Tb)'
+    symbol_names = 'tw Tl Tb'
+    symbol_values = '1825 1413 373' #K K days days
+  []
+
 []
 
 [Executioner]
@@ -117,6 +127,15 @@
   [t_sampler]
     type = LineValueSampler
     variable = T
+    start_point = '0 00 0'
+    end_point = '25 0 0'
+    num_points = 10
+    sort_by = x
+#
+  []
+  [PM_sampler]
+    type = LineValueSampler
+    variable = PMH
     start_point = '0 00 0'
     end_point = '25 0 0'
     num_points = 10

@@ -3,9 +3,9 @@
   [generated]
     type = GeneratedMeshGenerator
     dim = 2
-    nx = 500
+    nx = 100
     ny = 1
-    xmax = 500 # m
+    xmax = 100 # m
     ymax = 1
   []
 []
@@ -15,12 +15,7 @@
   []
 []
 
-[AuxVariables]
-  [PartialMeltHost]
-    order = FIRST
-    family = LAGRANGE
-  []
-[]
+
 
 [Kernels]
   [heatC]
@@ -34,20 +29,11 @@
   []
 []
 
-[AuxKernels]
-  [PartialMeltHost]
-    type = PartialMeltHost
-    temperature = T
-    value = 2
-    execute_on = timestep_end
-  []
-[]
-
 [ICs]
   [t_wallrock]
     type = ConstantIC
     variable = T
-    value = 370 #C
+    value = 373 #C
   []
 []
 
@@ -68,7 +54,7 @@
   [t_right]
     type = DirichletBC
     variable = T
-    value = 370 # C
+    value = 373 # C
     boundary = 'right'
   []
   [t_left]
@@ -82,15 +68,11 @@
 [Functions]
   [bc_func1]
     type=ParsedFunction
-    expression = 'if(t<tw, 0.5*(Tl-Tb)*(1-tanh(10*(t-tc)/tw))+Tb, Tb)'
-    symbol_names = 'Tl Tb tc tw'
-    symbol_values = '1413 373 1825 1825' #K K yr yr
+    expression = 'if(t<tw, Tl, Tb)'
+    symbol_names = 'tw Tl Tb'
+    symbol_values = '1825 1413 373' #K K yr yr
   []
 
-  [bc_func]
-    type = ParsedFunction
-    expression = '373' #C
-  []
 []
 
 [Executioner]
