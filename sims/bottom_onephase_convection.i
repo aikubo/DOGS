@@ -1,31 +1,31 @@
 
-
-[Adaptivity]
-  max_h_level = 2
-  marker = marker
-  initial_marker = initial
-  initial_steps = 2
-  [Indicators]
-    [indicator]
-      type = GradientJumpIndicator
-      variable = temperature
-    []
-  []
-  [Markers]
-    [marker]
-      type = ErrorFractionMarker
-      indicator = indicator
-      refine = 0.8
-    []
-    [initial]
-      type = BoxMarker
-      bottom_left = '0 1.95 0'
-      top_right = '2 2 0'
-      inside = REFINE
-      outside = DO_NOTHING
-    []
-  []
-[]
+#
+# [Adaptivity]
+#   max_h_level = 2
+#   marker = marker
+#   initial_marker = initial
+#   initial_steps = 2
+#   [Indicators]
+#     [indicator]
+#       type = GradientJumpIndicator
+#       variable = temperature
+#     []
+#   []
+#   [Markers]
+#     [marker]
+#       type = ErrorFractionMarker
+#       indicator = indicator
+#       refine = 0.8
+#     []
+#     [initial]
+#       type = BoxMarker
+#       bottom_left = '0 1.95 0'
+#       top_right = '2 2 0'
+#       inside = REFINE
+#       outside = DO_NOTHING
+#     []
+#   []
+# []
 
 [Mesh]
   [gen]
@@ -95,8 +95,8 @@
   [porosity]
     type = RandomIC
     variable = porosity
-    min = 0.25
-    max = 0.350
+    min = 0.1
+    max = 0.15
     seed = 0
   []
   [pressure]
@@ -123,7 +123,19 @@
     type = NeumannBC
     value = 0
     variable = temperature
-    boundary = 'right left top bottom'
+    boundary = 'right left'
+  []
+  [top]
+    type=DirichletBC
+    value =300
+    variable=temperature
+    boundary = 'top'
+  []
+  [bottom]
+    type=DirichletBC
+    value =500
+    variable=temperature
+    boundary = 'bottom'
   []
 []
 
@@ -153,7 +165,7 @@
   []
   [permeability2]
     type = PorousFlowPermeabilityConst
-    permeability = '1E-14 0 0   0 1E-14 0   0 0 1E-14'
+    permeability = '1E-13 0 0   0 1E-13 0   0 0 1E-13'
     block = 0
   []
   [permeability1]
