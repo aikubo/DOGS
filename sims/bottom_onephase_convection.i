@@ -87,7 +87,7 @@
   temperature = temperature
   coupling_type = ThermoHydro
   gravity = '0 -9.81 0'
-  fp = true_water
+  fp = tabulated_water
 []
 
 
@@ -132,6 +132,12 @@
   [true_water]
     type = Water97FluidProperties
   []
+  [tabulated_water]                # tabulation is the only way to make this effective
+  type = TabulatedBicubicFluidProperties  # the range 273.15 K <= T <= 1073.15 K for p <= 100 MPa should be OK [e.g. 800ºC at 10 km depth]
+  # interpolated_properties = 'density enthalpy internal_energy viscosity k cp cv entropy'
+  fp = true_water
+  fluid_property_file = water_IAPWS95_extrap.csv
+[]
 []
 
 [Materials]
