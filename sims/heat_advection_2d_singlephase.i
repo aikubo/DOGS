@@ -39,7 +39,7 @@
     type = DirichletBC
     variable = pp
     boundary = right
-    value = 0
+    value = 1
   []
   [spit_heat]
     type = DirichletBC
