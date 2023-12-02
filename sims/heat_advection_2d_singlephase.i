@@ -33,13 +33,13 @@
     type = DirichletBC
     variable = pp
     boundary = left
-    value = 1
+    value = 1e6
   []
   [pp1]
     type = DirichletBC
     variable = pp
     boundary = right
-    value = 0
+    value = 1e6
   []
   [spit_heat]
     type = DirichletBC
@@ -151,20 +151,28 @@
 [Executioner]
   type = Transient
   solve_type = Newton
-  dt = 0.01
-  end_time = 0.6
+
+  end_time = 100
+  #nl_abs_tol = 1.5E-08       # solver parameter. Nonlinear absolute tolerance. Default to 1E-50
+  #nl_rel_tol = 1E-9          # solver parameter. Nonlinear Relative Tolerance. Default to 1E-08
+  [TimeStepper]
+    type = IterationAdaptiveDT
+    dt = 0.01
+  []
+  line_search = 'none'
+  automatic_scaling = true
 []
 
-[VectorPostprocessors]
-  [T]
-    type = LineValueSampler
-    start_point = '0 0 0'
-    end_point = '1 0 0'
-    num_points = 51
-    sort_by = x
-    variable = temp
-  []
-[]
+# [VectorPostprocessors]
+#   [T]
+#     type = LineValueSampler
+#     start_point = '0 0 0'
+#     end_point = '1 0 0'
+#     num_points = 51
+#     sort_by = x
+#     variable = temp
+#   []
+# []
 
 [Outputs]
   exodus = true
