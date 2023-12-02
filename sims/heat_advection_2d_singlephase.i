@@ -1,14 +1,19 @@
-Increased PP on right to 10, left 1
-Nonlinear residual gets down to 9e-9 but then fluctates
-heat advects much faster in only 2.5 "s"
-can reduce nl tol
-might be due to functionIC
+# Increased PP on right to 10, left 1
+# Nonlinear residual gets down to 9e-9 but then fluctates
+# heat advects much faster in only 2.5 "s"
+# can reduce nl tol
+# might be due to functionIC
+
+# increased ymax and xmax
+#changed functionIC to reflect size
 
 [Mesh]
   type = GeneratedMesh
   dim = 2
   nx = 50
   ny = 50
+  xmax = 10
+  ymax = 10
 []
 
 [GlobalParams]
@@ -28,7 +33,7 @@ might be due to functionIC
   [pp]
     type = FunctionIC
     variable = pp
-    function = '1-x'
+    function = '10-x'
   []
 []
 
