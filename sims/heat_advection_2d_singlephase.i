@@ -33,13 +33,13 @@
     type = DirichletBC
     variable = pp
     boundary = left
-    value = 1e6
+    value = 1e4
   []
   [pp1]
     type = DirichletBC
     variable = pp
     boundary = right
-    value = 1e6
+    value = 1e4
   []
   [spit_heat]
     type = DirichletBC
