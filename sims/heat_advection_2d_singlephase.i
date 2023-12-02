@@ -8,6 +8,21 @@
 #changed functionIC to reflect size
 # converges fine
 
+# switched bcs and it does not look like it converges
+# gets to 85 s, 16 timesteps
+# kind of weird behavior
+# PP starts off looking constant with a high on the right
+# PP increases toward the left
+# temperature diffuses toward middle then hits the high PP
+# gets pushed back to the left
+
+#changed function IC so it looks correct
+# converging takes a while still
+# stalls at around 5.19 s, timestep 10
+# Nl residual around 6.5e-9
+# reducing nl to 1e-8
+
+
 [Mesh]
   type = GeneratedMesh
   dim = 2
@@ -34,7 +49,7 @@
   [pp]
     type = FunctionIC
     variable = pp
-    function = 'x-10'
+    function = 'x+1'
   []
 []
 
@@ -49,7 +64,7 @@
     type = DirichletBC
     variable = pp
     boundary = right
-    value = 10
+    value = 11
   []
   [spit_heat]
     type = DirichletBC
@@ -160,8 +175,8 @@
   end_time = 100
   l_abs_tol = 1e-16
   l_tol = 1e-13
-  nl_abs_tol = 1e-09       # solver parameter. Nonlinear absolute tolerance. Default to 1E-50
-  nl_rel_tol = 1E-8          # solver parameter. Nonlinear Relative Tolerance. Default to 1E-08
+  nl_abs_tol = 5e-08      # solver parameter. Nonlinear absolute tolerance. Default to 1E-50
+  nl_rel_tol = 1E-7          # solver parameter. Nonlinear Relative Tolerance. Default to 1E-08
   [TimeStepper]
     type = IterationAdaptiveDT
     dt = 0.01
