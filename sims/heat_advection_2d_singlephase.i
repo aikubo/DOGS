@@ -156,7 +156,7 @@
     type = IterationAdaptiveDT
     dt = 0.01
   []
-
+  line_search = none
 []
 
 # [VectorPostprocessors]
