@@ -1,5 +1,9 @@
-# 1phase, heat advecting with a moving fluid
-# Full upwinding is used
+Increased PP on right to 10, left 1
+Nonlinear residual gets down to 9e-9 but then fluctates
+heat advects much faster in only 2.5 "s"
+can reduce nl tol
+might be due to functionIC
+
 [Mesh]
   type = GeneratedMesh
   dim = 2
@@ -33,7 +37,7 @@
     type = DirichletBC
     variable = pp
     boundary = left
-    value = 1
+    value = 10
   []
   [pp1]
     type = DirichletBC
