@@ -33,13 +33,13 @@
     type = DirichletBC
     variable = pp
     boundary = left
-    value = 1e4
+    value = 1
   []
   [pp1]
     type = DirichletBC
     variable = pp
     boundary = right
-    value = 1e4
+    value = 0
   []
   [spit_heat]
     type = DirichletBC
@@ -140,27 +140,23 @@
 []
 
 [Preconditioning]
-  [andy]
-    type = SMP
-    full = true
-    petsc_options_iname = '-ksp_type -pc_type -snes_atol -snes_rtol -snes_max_it'
-    petsc_options_value = 'gmres bjacobi 1E-15 1E-10 10000'
-  []
 []
 
 [Executioner]
   type = Transient
   solve_type = Newton
-
+  nl_max_its = 100           # solver parameter. Max Nonlinear Iterations. Default to 50
+  l_max_its = 100
   end_time = 100
-  #nl_abs_tol = 1.5E-08       # solver parameter. Nonlinear absolute tolerance. Default to 1E-50
-  #nl_rel_tol = 1E-9          # solver parameter. Nonlinear Relative Tolerance. Default to 1E-08
+  l_abs_tol = 1e-16
+  l_tol = 1e-13
+  nl_abs_tol = 1e-09       # solver parameter. Nonlinear absolute tolerance. Default to 1E-50
+  nl_rel_tol = 1E-8          # solver parameter. Nonlinear Relative Tolerance. Default to 1E-08
   [TimeStepper]
     type = IterationAdaptiveDT
     dt = 0.01
   []
-  line_search = 'none'
-  automatic_scaling = true
+
 []
 
 # [VectorPostprocessors]
