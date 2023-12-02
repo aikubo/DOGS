@@ -6,6 +6,7 @@
 
 # increased ymax and xmax
 #changed functionIC to reflect size
+# converges fine
 
 [Mesh]
   type = GeneratedMesh
@@ -33,7 +34,7 @@
   [pp]
     type = FunctionIC
     variable = pp
-    function = '10-x'
+    function = 'x-10'
   []
 []
 
@@ -42,13 +43,13 @@
     type = DirichletBC
     variable = pp
     boundary = left
-    value = 10
+    value = 1
   []
   [pp1]
     type = DirichletBC
     variable = pp
     boundary = right
-    value = 1
+    value = 10
   []
   [spit_heat]
     type = DirichletBC
