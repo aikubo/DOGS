@@ -28,10 +28,6 @@
 # increased nl_abs_tol to 1e-6 and it converges well
 # relatively quick to run
 
-# added gravity (earth like)
-# needed to add PorousFlowTotalGravitationalDensityFullySaturatedFromPorosity
-# works fine
-
 
 
 [Mesh]
@@ -105,7 +101,6 @@
   [the_simple_fluid]
     type = SimpleFluidProperties
     bulk_modulus = 2E9
-    density0 = 1000
   []
 []
 
@@ -122,7 +117,7 @@
   displacements = 'disp_x disp_y disp_z'
   fp = the_simple_fluid
   biot_coefficient = 0.6
-  gravity = ' 0 -9.81 0'
+  gravity = ' 0 0 0'
   #stabilization = KT
 
 []
@@ -140,12 +135,8 @@
     type = ComputeLinearElasticStress
   []
   [porosity]
-    type = PorousFlowPorosity
-    fluid = true
-    mechanical = true
-    porosity_zero = 0.1
-    biot_coefficient = 0.6
-    solid_bulk = 10.0E9
+    type = PorousFlowPorosityConst # only the initial value of this is ever used
+    porosity = 0.1
   []
   [biot_modulus]
     type = PorousFlowConstantBiotModulus
@@ -156,10 +147,7 @@
     type = PorousFlowPermeabilityConst
     permeability = '1E-12 0 0   0 1E-12 0   0 0 1E-12'
   []
-  [density]
-    type = PorousFlowTotalGravitationalDensityFullySaturatedFromPorosity
-    rho_s = 2400
-  []
+
 
 []
 
