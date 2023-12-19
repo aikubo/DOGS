@@ -21,6 +21,13 @@
 # The following material properties are declared on block 0 by multiple materials:
 
 # what worked was moving biot_modulus from GlobalParams to PorousFlowFullySaturated
+# based on /tests/poro_elasticity/pp_generation_fullysat_action.i
+
+# works well for TimeStepper type = IterationAdaptiveDT but not for ConstantDT
+# added line_search = 'none'
+# increased nl_abs_tol to 1e-6 and it converges well
+# relatively quick to run
+
 
 
 [Mesh]
@@ -111,7 +118,7 @@
   fp = the_simple_fluid
   biot_coefficient = 0.6
   gravity = ' 0 0 0'
-  stabilization = KT
+  #stabilization = KT
 
 []
 
@@ -144,13 +151,13 @@
 
 []
 
-# [Postprocessors]
-#   [pp]
-#     type = PointValue
-#     point = '0.5 0.5 0.5'
-#     variable = porepressure
-#   []
-# []
+[Postprocessors]
+  [pp]
+    type = PointValue
+    point = '0.5 0.5 0.5'
+    variable = porepressure
+  []
+[]
 
 [Preconditioning]
   [mumps]
@@ -168,12 +175,14 @@
   end_time = 2
   petsc_options_iname = '-pc_type -pc_factor_shift_type'
   petsc_options_value = 'lu NONZERO'
-  line_search = 'none'
+  nl_abs_tol = 1e-6
 
-  [TimeStepper]
-    type = IterationAdaptiveDT
-    dt = .1
-  []
+  dt = 0.01
+  # [TimeStepper]
+  #   type = IterationAdaptiveDT
+  #   dt = .01
+  # []
+  line_search = 'none'
 []
 
 [Outputs]
