@@ -32,6 +32,10 @@
 # needed to add PorousFlowTotalGravitationalDensityFullySaturatedFromPorosity
 # works fine
 
+# added porosity changes
+# now the porepressure acts a bit weird
+# but it runs
+# porosity changes verrrry little or none at all probably because displacements are so small
 
 
 [Mesh]
@@ -153,8 +157,12 @@
     fluid_bulk_modulus = 2E9
   []
   [permeability]
-    type = PorousFlowPermeabilityConst
-    permeability = '1E-12 0 0   0 1E-12 0   0 0 1E-12'
+    type = PorousFlowPermeabilityKozenyCarman
+    poroperm_function = kozeny_carman_phi0
+    k0 = 10e-10
+    phi0 = 0.1
+    m = 2
+    n = 7
   []
   [density]
     type = PorousFlowTotalGravitationalDensityFullySaturatedFromPorosity
@@ -163,11 +171,31 @@
 
 []
 
+[AuxVariables]
+  [porosity]
+    order = CONSTANT
+    family = MONOMIAL
+  []
+[]
+
+[AuxKernels]
+  [porosity]
+    type = PorousFlowPropertyAux
+    variable = porosity
+    property = porosity
+  []
+[]
+
 [Postprocessors]
   [pp]
     type = PointValue
     point = '0.5 0.5 0.5'
     variable = porepressure
+  []
+  [poro]
+    type = PointValue
+    point = '0.5 0.5 0.5'
+    variable = porosity
   []
 []
 
