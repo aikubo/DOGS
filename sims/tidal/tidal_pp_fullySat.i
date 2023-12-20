@@ -37,6 +37,8 @@
 # but it runs
 # porosity changes verrrry little or none at all probably because displacements are so small
 
+#added permeability based on porosity
+# works fine doesn't seem to change much
 
 [Mesh]
 
@@ -93,15 +95,15 @@
 [Functions]
   [earth_tide_x]
     type = ParsedFunction
-    expression = 'x*1E-8*(5*cos(t*2*pi) + 2*cos((t-0.5)*2*pi) + 1*cos((t+0.3)*0.5*pi))'
+    expression = 'x*1E-3*(5*cos(t*2*pi) + 2*cos((t-0.5)*2*pi) + 1*cos((t+0.3)*0.5*pi))'
   []
   [earth_tide_y]
     type = ParsedFunction
-    expression = 'y*1E-8*(7*cos(t*2*pi) + 4*cos((t-0.3)*2*pi) + 7*cos((t+0.6)*0.5*pi))'
+    expression = 'y*1E-3*(7*cos(t*2*pi) + 4*cos((t-0.3)*2*pi) + 7*cos((t+0.6)*0.5*pi))'
   []
   [earth_tide_z]
     type = ParsedFunction
-    expression = 'z*1E-8*(7*cos((t-0.5)*2*pi) + 4*cos((t-0.8)*2*pi) + 7*cos((t+0.1)*4*pi))'
+    expression = 'z*1E-3*(7*cos((t-0.5)*2*pi) + 4*cos((t-0.8)*2*pi) + 7*cos((t+0.1)*4*pi))'
   []
 []
 

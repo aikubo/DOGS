@@ -1,13 +1,12 @@
 [Mesh]
   type = ConcentricCircleMesh
-  num_sectors = 6
-  radii = '0.2546 0.3368 0.3600 0.3818 0.3923 0.4025 0.4110 0.4750'
-  rings = '10 6 4 4 4 2 2 6 10'
-  inner_mesh_fraction = 0.6
-  has_outer_square = on
-  pitch = 1.42063
-  #portion = left_half
-  preserve_volumes = off
+  num_sectors = 2
+  radii = '150 185'
+  rings = '1 1'
+  preserve_volumes = on
+  has_outer_square = false
+  coord_type = RZ
+  inner_mesh_fraction = 0.5
 []
 
 [Variables]
