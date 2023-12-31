@@ -13,6 +13,21 @@
 # using bodyforce kernal with function
 # might work after changing tol again
 
+# as expected doen't work with BCs
+# trying a NeumanBC function the same as the body force?
+#
+
+# works ad neuman BC
+# when i try to visualize in paraview
+# it looks like a box moving around
+# try to "pin" it
+# Next steps: figure out how to add pinned boundary
+#
+# pin with ExtraNodesetGenerator seems to be working
+# don't check "Apply displacements" in paraview!
+#
+# trying sphere
+
 [GlobalParams]
   displacements = 'disp_x disp_y disp_z'
   #large_kinematics = true
@@ -20,12 +35,21 @@
 []
 
 [Mesh]
-  [generated]
+  [mesh]
     type = GeneratedMeshGenerator
     dim = 3
     nx = 10
     ny = 10
     nz = 10
+    xmax = 10
+    ymax = 10
+    zmax = 10
+  []
+  [pin]
+    type = ExtraNodesetGenerator
+    input = mesh
+    new_boundary = 100
+    coord = '5 5 5'
   []
 []
 
@@ -47,7 +71,7 @@
 [Functions]
   [gravf]
     type = ParsedFunction
-    expression = -100*cos(t*20*pi)*(t/5)
+    expression = -10*cos(t/5)
   []
 []
 
@@ -77,30 +101,57 @@
   [../]
   [gravy]
     type = BodyForce
-    variable = disp_y
+    variable = disp_x
     function = gravf
+    use_displaced_mesh = true
   []
+
 []
 
 [BCs]
-  [bottom_x]
+  # [bottom_x]
+  #   type = DirichletBC
+  #   variable = disp_x
+  #   boundary = bottom
+  #   value = 0
+  # []
+  # [bottom_y]
+  #   type = DirichletBC
+  #   variable = disp_y
+  #   boundary = bottom
+  #   value = 0
+  # []
+
+  [xbc]
+    type = FunctionNeumannBC
+    variable = disp_x
+    boundary = 'right left'
+    function = gravf
+  []
+  # [ybc]
+  #   type = DirichletBC
+  #   variable = disp_y
+  #   value = 0
+  #   boundary = ' top bottom'
+  # []
+  [polex]
     type = DirichletBC
     variable = disp_x
-    boundary = bottom
     value = 0
+    boundary = 100
   []
-  [bottom_y]
+  [poley]
     type = DirichletBC
     variable = disp_y
-    boundary = bottom
     value = 0
+    boundary = 100
   []
-  # [Pressure]
-  #   [top]
-  #     boundary = top
-  #     function = 1e7*t
-  #   []
-  # []
+  [polez]
+    type = DirichletBC
+    variable = disp_z
+    value = 0
+    boundary = 100
+  []
 []
 
 [Materials]
@@ -145,17 +196,24 @@
   end_time = 50
   dt = 1
 
-  nl_rel_tol = 1e-14
-  nl_abs_tol = 1e-14
-  l_tol = 1e-14
-  l_abs_tol = 1e-14
+  nl_rel_tol = 5e-9
+  nl_abs_tol = 5e-9
+  l_tol = 5e-9
+  l_abs_tol = 5e-9
 
   nl_max_its = 50
   l_max_its = 100
   line_search = none
 
   automatic_scaling = true
-
+[]
+[Postprocessors]
+  [./disp_x]
+    type = PointValue
+    point = '1 1 1'
+    variable = disp_x
+    use_displaced_mesh = true
+  [../]
 []
 
 [Outputs]
