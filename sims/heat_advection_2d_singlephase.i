@@ -1,3 +1,6 @@
+# CHANGELOG
+# - commit when it converges but log changes here
+
 # Increased PP on right to 10, left 1
 # Nonlinear residual gets down to 9e-9 but then fluctates
 # heat advects much faster in only 2.5 "s"
@@ -21,6 +24,39 @@
 # stalls at around 5.19 s, timestep 10
 # Nl residual around 6.5e-9
 # reducing nl to 1e-8
+# converged great then
+# heat only comes >> 1m from starting point
+# PP stays the same
+# commit 8df2a69
+
+# changed left to 0, right at 10 PP
+# heat only changes a little
+# worried that my tolerances are too HIGH
+# again and it's not actually solving anything
+# works if i change the PP so right is low and left is high
+# that's a good sign
+#
+# trying left 0, right 10 porepressure
+# commented out all the stuff in the executioner settings
+# simulation gets to 2.5 s then diverges
+# DIVERGED_LINE_SEARCH iterations 8
+# fails at timestep 9
+# looks basically the same
+# added linesearh none and it still does that
+# diverges
+# nl gets to 2e-8 lr gets to 9-14
+
+# Time Step 4, time = 7, dt = 1.19209e-07
+#  0 Nonlinear |R| = 1.083285e-01
+#       0 Linear |R| = 1.083285e-01
+#       1 Linear |R| = 9.568398e-10
+#  1 Nonlinear |R| = 2.538682e-04
+#       0 Linear |R| = 2.538682e-04
+#       1 Linear |R| = 8.794674e-12
+#  2 Nonlinear |R| = 2.018859e-04
+#
+# adding automatic_scaling gets the residuals for both
+# significantly lower
 
 
 [Mesh]
@@ -49,7 +85,7 @@
   [pp]
     type = FunctionIC
     variable = pp
-    function = 'x+1'
+    function = 'x'
   []
 []
 
@@ -58,13 +94,13 @@
     type = DirichletBC
     variable = pp
     boundary = left
-    value = 1
+    value = 0
   []
   [pp1]
     type = DirichletBC
     variable = pp
     boundary = right
-    value = 11
+    value = 10
   []
   [spit_heat]
     type = DirichletBC
@@ -170,16 +206,17 @@
 [Executioner]
   type = Transient
   solve_type = Newton
-  nl_max_its = 100           # solver parameter. Max Nonlinear Iterations. Default to 50
-  l_max_its = 100
-  end_time = 100
-  l_abs_tol = 1e-16
-  l_tol = 1e-13
-  nl_abs_tol = 5e-08      # solver parameter. Nonlinear absolute tolerance. Default to 1E-50
-  nl_rel_tol = 1E-7          # solver parameter. Nonlinear Relative Tolerance. Default to 1E-08
+  automatic_scaling = true
+  # nl_max_its = 100           # solver parameter. Max Nonlinear Iterations. Default to 50
+  # l_max_its = 100
+  # end_time = 100
+  # l_abs_tol = 1e-16
+  # l_tol = 1e-13
+  # nl_abs_tol = 5e-08      # solver parameter. Nonlinear absolute tolerance. Default to 1E-50
+  # nl_rel_tol = 1E-7          # solver parameter. Nonlinear Relative Tolerance. Default to 1E-08
   [TimeStepper]
     type = IterationAdaptiveDT
-    dt = 0.01
+    dt = 1
   []
   line_search = none
 []
