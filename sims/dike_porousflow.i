@@ -1,13 +1,53 @@
-# 1. start with dike with CONDUCTION ONLY
 
 [Mesh]
-  type = GeneratedMesh
-  dim = 2
-  nx = 10
-  ny = 20
-  ymin = 50
-  ymax = 2000 #m
-  xmax = 500 #m
+  [gen1]
+    type = GeneratedMeshGenerator
+    dim = 3
+    nx = 2
+    ny = 10
+    nz = 5
+    ymin = 0 #m
+    ymax = 2000 #m
+    xmin = 0 
+    xmax = 10 #m
+    zmin = 0
+    zmax= 100
+    boundary_name_prefix = "dike"
+  []
+  [gen2]
+    type = GeneratedMeshGenerator
+    dim = 3
+    nx = 10
+    ny = 20
+    nz = 5
+    ymin = 0 #m
+    ymax = 2000 #m
+    xmin = 0
+    xmax = 1000 #m
+    zmin = 0
+    zmax= 100
+    boundary_name_prefix = "host"
+  []
+  [smg]
+    type = StitchedMeshGenerator
+    inputs = 'gen1 gen2'
+    clear_stitched_boundary_ids = true
+    stitch_boundaries_pairs = 'dike_right host_left'
+  []
+  [dike]
+    type = SubdomainBoundingBoxGenerator
+    input = smg
+    top_right = '10 2000 100'
+    bottom_left = '0 0 0'
+    block_id = 1
+  []    
+  [rename]
+    type = RenameBlockGenerator
+    input = dike
+    old_block = '0 1'
+    new_block = 'wallrock dike'
+  []
+  final_generator = rename
 []
 
 [GlobalParams]
@@ -20,9 +60,17 @@
     order = CONSTANT
     family = MONOMIAL
   []
-  [volume]
-    order = CONSTANT
+  [water_darcy_vel_x]
     family = MONOMIAL
+    order = CONSTANT
+  []
+  [water_darcy_vel_y]
+    family = MONOMIAL
+    order = CONSTANT
+  []
+  [pgas]
+    family = MONOMIAL
+    order = CONSTANT
   []
 []
 
@@ -33,9 +81,26 @@
     property = temperature
     execute_on = 'initial timestep_end'
   []
-  [volume]
-    type = VolumeAux
-    variable = volume
+  [darcy_vel_x_kernel]
+    type = PorousFlowDarcyVelocityComponent
+    component = x
+    variable = water_darcy_vel_x
+    fluid_phase = 0                            
+    execute_on = 'initial timestep_end'
+  []
+  [darcy_vel_y_kernel]
+    type = PorousFlowDarcyVelocityComponent
+    component = y
+    variable = water_darcy_vel_y
+    fluid_phase = 0                             
+    execute_on = 'initial timestep_end'
+  []
+  [pressure_gas]
+    type = PorousFlowPropertyAux
+    variable = pgas
+    property = pressure
+    phase = 1
+    execute_on = 'initial timestep_end'
   []
 []
 
@@ -50,19 +115,17 @@
 [Functions]
   [ppfunc]
     type = ParsedFunction
-    expression = 1.5e5+(2000-y)*9.81*2400 #lithostatic gradient
+    expression = 1.0135e5+(2000-y)*9.81*1000 #hydrostatic gradient offset
   []
   [tfunc]
     type = ParsedFunction
-    expression = 273+10+(2000-y)*20/1000 # 20 C per kilometer
+    expression = 273+10+(2000-y)*20/1000 # geothermal 20 C per kilometer
   []
-  [hfunc]
+  [dikefunc]
     type = ParsedFunction
-    expression = 4184*T+p*v
-    symbol_names = " T p v"
-    symbol_values = "tfunc ppfunc 5000"
+    expression = "if(t>a, 1173, 100)"
+    a = 3000 # replace with the desired value of t
   []
-
 []
 
 
@@ -73,39 +136,56 @@
     function = ppfunc
   []
   [hic]
-    type = PorousFlowFluidPropertyIC
+    type = PorousFlowFluidPropertyFunctionIC
     porepressure = pliquid
     property = enthalpy
     fp = wat
     variable = h
-    temperature = tfunc
+    temperature = 50
+    function = tfunc
     temperature_unit = Kelvin
+    block = 'wallrock'
+  []
+  [dike_hic]
+    type = PorousFlowFluidPropertyFunctionIC
+    porepressure = pliquid
+    property = enthalpy
+    fp = wat
+    variable = h
+    temperature = 500
+    function = dikefunc
+    temperature_unit = Kelvin
+    block = 'dike'
   []
 []
 
 [BCs]
   [ptop]
-    type = ADDirichletBC
+    type = FunctionDirichletBC
     variable = pliquid
-    value = 1.0e5
+    function = ppfunc
     boundary = top
   []
   [pbot]
-    type = ADDirichletBC
+    type = FunctionDirichletBC
     variable = pliquid
-    value = 2354400
+    function = ppfunc
     boundary = bottom
   []
   [hleft]
     type = DirichletBC
     variable = h
-    value = 678.52e3
-    boundary = left
+    porepressure = pliquid
+    fp = wat
+    function = dikefunc
+    boundary = right
   []
   [hright]
-    type = DirichletBC
+    type = FunctionTempEnthalpyBC
     variable = h
-    value = 721.4e3
+    porepressure = pliquid
+    fp = wat
+    function = tfunc
     boundary = right
   []
 []
@@ -114,22 +194,37 @@
   [mass]
     type = PorousFlowMassTimeDerivative
     variable = pliquid
+    block = 'wallrock'
   []
   [massflux]
     type = PorousFlowAdvectiveFlux
     variable = pliquid
+    block = 'wallrock'
   []
   [heat]
     type = PorousFlowEnergyTimeDerivative
     variable = h
+    block = 'wallrock'
   []
-  # [heatflux]
-  #   type = PorousFlowHeatAdvection
-  #   variable = h
-  # []
+  [heatflux]
+    type = PorousFlowHeatAdvection
+    variable = h
+    block = 'wallrock'
+  []
   [heatcond]
     type = PorousFlowHeatConduction
     variable = h
+    block = 'wallrock'
+  []
+  [dike_heat]
+    type = PorousFlowEnergyTimeDerivative
+    variable = h
+    block = 'dike'
+  []
+  [dike_cond]
+    type = PorousFlowHeatConduction
+    variable = h
+    block = 'dike'
   []
 []
 
@@ -175,14 +270,27 @@
     capillary_pressure = pc
     fluid_state = fs
   []
-  [porosity]
+  [porosity_wallrock]
     type = PorousFlowPorosityConst
     porosity = 0.2
+    block = 'wallrock'
   []
-  [permeability]
+  [permeability_wallrock]
     type = PorousFlowPermeabilityConst
     permeability = '1.8e-11 0 0 0 1.8e-11 0 0 0 1.8e-11'
+    block = 'wallrock'
   []
+  [porosity_dike]
+    type = PorousFlowPorosityConst
+    porosity = 0.00
+    block = 'dike'
+  []
+  [permeability_dike]
+    type = PorousFlowPermeabilityConst
+    permeability = '0 0 0 0 0 0 0 0 0'
+    block = 'dike'
+  []
+
   [relperm_water]
     type = PorousFlowRelativePermeabilityCorey
     n = 2
@@ -211,6 +319,8 @@
   [smp]
     type = SMP
     full = true
+    petsc_options_iname = '-pc_type -pc_factor_mat_solver_package'
+    petsc_options_value = ' lu       mumps'
   []
 []
 
@@ -219,9 +329,10 @@
   solve_type = NEWTON
   end_time = 5e3
   nl_abs_tol = 1e-10
+  line_search = none
   [TimeStepper]
     type = IterationAdaptiveDT
-    dt = 100
+    dt = 5
   []
 []
 
