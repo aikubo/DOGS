@@ -60,20 +60,142 @@
 # decreasing nl_abs_tol to  1e-2 seems to work although 
 # it seems really high to me
 
+# seems to be working 
+# runs to 2.7e5 seconds
+# then errors with temperature, pressure, enthalpy
+# 
+# *** ERROR ***
+# The following error occurred in the object "wat", of type "Water97FluidProperties".
+
+# temperature_from_ph() not implemented for region 5
+
+# maybe a different enthalpy type function would be better
+# it is a constant Temp function but it's not constant enthalpy 
+
+# runs for quite a while up to 2.629950e+05 seconds but then looks like 
+# there are issues with the 'h' in subdomain(s) {''} at node 93: (x,y,z)=(6.0792482526339,     1300,        0)
+# right at the boundary
+# i get this error *** ERROR ***
+# The following error occurred in the object "wat", of type "Water97FluidProperties".
+
+# temperature_from_ph() not implemented for region 5
+# added meshrefinement 
+# didn't seem to help at all 
+# reimplemented porosity function and it iterated 1 timestep
+# getting negative pressures
+
+#trying to just have dike as part of the boundary (ie not to the surface)
+# sort of helps but still getting negative pressures
+# [DBG][0] 7381567884.17652 'h' in subdomain(s) {''} at node 345: (x,y,z)=(3.03962412631695,     1200,        0)
+#  0 Nonlinear |R| = 2.682659e+10
+#       0 Linear |R| = 2.682659e+10
+#       1 Linear |R| = 9.808807e-06
+# Pressure -4.25213e+06 is out of range in wat: inRegionPH()
+# Nonlinear solve did not converge due to DIVERGED_LINE_SEARCH iterations 0
+# it's always at that node specifically
+
+# I've also been getting out of range errors for pressure in region 5 
+# region 5 is high T lowish P 
+# it shouldn't actually even be in region 5 i think
+# i think it's because pressure is too low at the left boundary 
+# might also be because of my enthalpy bc when you call h_from_t_p
+# in FunctionTempEnthalpyBC
+
+# set a dirichlet bc for pressure on the left boundary
+# "magmatic pressures" ?? of 5e6 Pa
+# this helps with the two phase zone 
+# but now i'm getting enthalpy out of bounds at 1e7 
+# tried damping it with BoundingValueNodalDamper
+# but it says the min_damping is -19.3
+# which I think isn't even reasonable 
+# so i turned that off 
+
+# added porousflowpiecewise linear sink boundaries 
+# i also turned off all damping which seems to help
+# now i'm getting enthalpy out of range but it's only 41490
+# so that's a lot better than 1e7
+# okay so the problem is that for a specific temperature and pressure
+# there are MULTIPLE ENTHALPY VALUES for BUT DIFFERENT GAS SATURATIONS 
+# seems like i need a "vaporPressureBC" or IC
+
+# added term to dikefunc for temperature to slowly ramp 
+# from 273 to 500 K over 100 s
+# this allows the simulation to run for a couple timesteps 
+# but then it errors with negative pressures
+
+# added damping for pressure and now I get enthalpy out of range
+# so the convergence issues ocurr at t=75 s 
+# which in the dikefunc is temperatures of 100 C 
+# right at the phase change
+
+# using DirichletBC for h at 250000 on the left 
+# works great simulation converging well
+
+# increased enthalpy bc to get to the right temps
+# taking longer to converge but still works up 11 timesteps 
+# so that's progress 
+
+
 [Mesh]
     [mesh]
         type = GeneratedMeshGenerator
         dim = 2
-        nx = 25
+        nx = 30
         ny = 10
-        bias_x = 1.05
+        bias_x = 1.1
         xmin = 0
         xmax = 1000 #units meters
         ymin = 1000
         ymax = 2000
     []
   []
+
+  [Adaptivity]
+    marker = errorfrac # this specifies which marker from 'Markers' subsection to use
+    steps = 2 # run adaptivity 2 times, recomputing solution, indicators, and markers each time
   
+    # Use an indicator to compute an error-estimate for each element:
+    [./Indicators]
+      # create an indicator computing an error metric for the convected variable
+      [./error]
+        # arbitrary, use-chosen name
+        type = GradientJumpIndicator
+        variable = h
+        outputs = none
+      [../]
+    [../]
+  
+    # Create a marker that determines which elements to refine/coarsen based on error estimates
+    # from an indicator:
+    [./Markers]
+      [./errorfrac]
+        # arbitrary, use-chosen name (must match 'marker=...' name above
+        type = ErrorFractionMarker
+        indicator = error # use the 'error' indicator specified above
+        refine = 0.5 # split/refine elements in the upper half of the indicator error range
+        coarsen = 0 # don't do any coarsening
+        outputs = none
+      [../]
+    [../]
+  []
+  
+  [Dampers]
+    [./limit]
+      type = BoundingValueNodalDamper
+      variable = pliquid
+      max_value = 1e8
+      min_value = 1e1
+      min_damping = 0.00001
+    [../]
+    # [./limit2]
+    #     type = BoundingValueNodalDamper
+    #     variable = h
+    #     max_value = 1e6
+    #     min_value = 1e2
+
+    # [../]
+  []
+
   [GlobalParams]
     PorousFlowDictator = dictator
     gravity = '0 -9.81 0'
@@ -123,6 +245,18 @@
         family = MONOMIAL
         order = CONSTANT
     []
+    [hleft]
+        family = LAGRANGE
+        order = FIRST
+    []
+    [ptop]
+        family = LAGRANGE
+        order = FIRST
+    []
+    [gas_sat]
+        family = MONOMIAL
+        order = CONSTANT  
+    []
 []
   
   
@@ -156,7 +290,13 @@
       property = pressure
       phase = 1
       execute_on = 'initial timestep_end'
-       
+    []
+    [gas_sat]
+        type = PorousFlowPropertyAux
+        variable = gas_sat
+        property = saturation
+        phase = 1
+        execute_on = 'initial timestep_end'
     []
   []
   
@@ -164,12 +304,11 @@
     [pliquid]
       order = FIRST
       family = LAGRANGE
-       
     []
     [h]
       order = FIRST
       family = LAGRANGE
-      scaling = 1
+      scaling = 1e-5
     []
   []
   
@@ -184,15 +323,21 @@
     []
     [dikefunc]
       type = ParsedFunction
-      expression = 600 # temperature of dike on left boundary in K
+      expression ='(273+T)-T*exp(t/-100)' # temperature of dike on left boundary in K
+      symbol_names = 'T'
+      symbol_values = 200
     []
+    # [dikefunc2]
+    #     type = ParsedFunction
+    #     expression = 'if( (y>=1100)&(y<=1900),500,273+10+(2000-y)*10/1000)' # temperature of dike on left boundary in K for Y= 1000-1700 only
+    # []
     [permfunc]
         type = ParsedFunction
-        expression = 1e-11 #-1e-13*exp(-x/50)+1e-13 # permeability in m^2
+        expression = 'if(x>20,1e-11,1e-15)' # permeability in m^2
     []
     [porofunc_exp]
         type = ParsedFunction
-        expression = 0.1 #-0.2*exp(-x/50)+0.2 # porosity
+        expression = -0.2*exp(-x/50)+0.2 # porosity
     []
     [porofunc]
         type = PiecewiseConstant
@@ -201,6 +346,10 @@
                    100 0.1
                    1000 0.1'
         direction = RIGHT_INCLUSIVE
+    []
+    [edikefunc]
+        type = ParsedFunction
+        expression = 900000 # enthalpy of dike on left boundary in J/kg
     []
 
   []
@@ -242,6 +391,44 @@
       function = ppfunc
       boundary = 'right'
     []
+    [ptop]
+        type = PorousFlowPiecewiseLinearSink
+        # allow fluid to flow out or in of the top boundary
+        # based on pliquid - Pe
+        variable = pliquid
+        boundary = 'top bottom'
+        pt_vals = '1e-9 1e9'
+        multipliers = '1e-9 1e9'
+        PT_shift = 1e5
+        flux_function = 1e-5
+        save_in = 'ptop'
+        fluid_phase = 0
+        use_mobility = true
+        use_relperm = true
+    []
+    [pdike]
+        type = DirichletBC
+        # no liquid can flow out the left boundary because the dike is impermeable
+        variable = pliquid
+        boundary = 'left'
+        value = 1e6
+    []
+
+    [hbc]
+        type = PorousFlowPiecewiseLinearSink
+        # allow fluid to flow out or in of the top boundary
+        # based on pliquid - Pe
+        variable = h
+        boundary = 'top bottom'
+        pt_vals = '1e-9 1e9'
+        multipliers = '1e-9 1e9'
+        PT_shift = 273
+        fluid_phase = 0
+        flux_function = 1e-5
+        use_mobility = true
+        use_relperm = true
+        use_enthalpy = true
+    []
     [hright]
         type = FunctionTempEnthalpyBC
         # custom function by aikubo
@@ -252,43 +439,29 @@
         fp = wat
         function = tfunc
         variable = h
-        boundary = 'right'
+        boundary = 'right top'
         temperature_unit = Kelvin
-    []
-    [ptop]
-        type = PorousFlowOutflowBC
-        # allow fluid to flow out of the top and bottom boundary
-        variable = pliquid
-        boundary = 'top bottom'
-        flux_type = fluid
-    []
-    [hbc]
-        type = PorousFlowOutflowBC
-        # allow heat to flow out of the top and bottom boundary
-        variable = h
-        boundary = 'top bottom'
-        flux_type = heat
-    []
-    [pdike]
-        type = NeumannBC
-        # no liquid can flow out the left boundary because the dike is impermeable
-        variable = pliquid
-        boundary = 'left'
-        value = 0
     []
     [hleft]
-        type = FunctionTempEnthalpyBC
-        # custom function by aikubo
-        # enthalpy is temperature and pressure dependent
-        # function of dike temperature over time
-
-        porepressure = pliquid
-        fp = wat
-        function = dikefunc
+        type = FunctionDirichletBC
         variable = h
         boundary = 'left'
-        temperature_unit = Kelvin
+        function = edikefunc
     []
+    # [hleft]
+    #     type = FunctionTempEnthalpyBC
+    #     # custom function by aikubo
+    #     # enthalpy is temperature and pressure dependent
+    #     # function of dike temperature over time
+
+    #     porepressure = pliquid
+    #     fp = wat
+    #     function = dikefunc
+    #     variable = h
+    #     boundary = 'left'
+    #     temperature_unit = Kelvin
+    #     save_in = 'hleft'
+    # []
   []
   
   [Kernels]
@@ -376,8 +549,9 @@
     type = Transient
     solve_type = NEWTON
     end_time = 5e6
-    nl_abs_tol = 7.0e-2
+    nl_abs_tol = 1e-7
     line_search = none
+    nl_max_its = 25
     [TimeStepper]
       type = IterationAdaptiveDT
       dt = 5
@@ -416,6 +590,12 @@
         type = SideAverageValue
         variable = temperature
         boundary = 'left'
+        execute_on = 'initial timestep_end'
+    []
+    [bcbottom_t] #check boundary behaves as expected
+        type = SideAverageValue
+        variable = temperature
+        boundary = 'bottom'
         execute_on = 'initial timestep_end'
     []
 []
