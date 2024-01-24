@@ -144,7 +144,7 @@
         ny = 10
         bias_x = 1.1
         xmin = 0
-        xmax = 1000 #units meters
+        xmax = 2000 #units meters
         ymin = 1000
         ymax = 2000
     []
@@ -304,6 +304,7 @@
     [pliquid]
       order = FIRST
       family = LAGRANGE
+      scaling = 1e-4
     []
     [h]
       order = FIRST
@@ -315,7 +316,7 @@
   [Functions]
     [ppfunc]
       type = ParsedFunction
-      expression = 1.0135e5+(2000-y)*9.81*1000 #hydrostatic gradient  + atmospheric pressure in Pa
+      expression = 1.0135e5+(2000-y)*9.81*1000 #hydrostatic gradientose   + atmospheric pressure in Pa
     []
     [tfunc]
       type = ParsedFunction
@@ -327,17 +328,17 @@
       symbol_names = 'T'
       symbol_values = 200
     []
-    # [dikefunc2]
-    #     type = ParsedFunction
-    #     expression = 'if( (y>=1100)&(y<=1900),500,273+10+(2000-y)*10/1000)' # temperature of dike on left boundary in K for Y= 1000-1700 only
-    # []
+    [dikefunc2]
+        type = ParsedFunction
+        expression = 'if( (y<=1900),500000,4000)' # temperature of dike on left boundary in K for Y= 1000-1700 only
+    []
     [permfunc]
         type = ParsedFunction
-        expression = 'if(x>20,1e-11,1e-15)' # permeability in m^2
+        expression = 10e-10 #'if(x>20,1e-11,1e-15)' # permeability in m^2
     []
-    [porofunc_exp]
+    [porofunc2]
         type = ParsedFunction
-        expression = -0.2*exp(-x/50)+0.2 # porosity
+        expression = 0.1
     []
     [porofunc]
         type = PiecewiseConstant
@@ -349,7 +350,7 @@
     []
     [edikefunc]
         type = ParsedFunction
-        expression = 900000 # enthalpy of dike on left boundary in J/kg
+        expression = 100000 # enthalpy of dike on left boundary in J/kg
     []
 
   []
@@ -379,7 +380,7 @@
     [poro_auxvar_IC] # porosity is a function of x or can be constant
         type = FunctionIC
         variable = poro_aux
-        function = porofunc
+        function = porofunc2
     []
   []
   
@@ -399,35 +400,33 @@
         boundary = 'top bottom'
         pt_vals = '1e-9 1e9'
         multipliers = '1e-9 1e9'
-        PT_shift = 1e5
-        flux_function = 1e-5
+        PT_shift = 1e7
+        flux_function = 1
         save_in = 'ptop'
         fluid_phase = 0
         use_mobility = true
         use_relperm = true
     []
-    [pdike]
-        type = DirichletBC
-        # no liquid can flow out the left boundary because the dike is impermeable
-        variable = pliquid
-        boundary = 'left'
-        value = 1e6
-    []
-
-    [hbc]
+    [ptop_gas]
         type = PorousFlowPiecewiseLinearSink
         # allow fluid to flow out or in of the top boundary
         # based on pliquid - Pe
-        variable = h
+        variable = pliquid
         boundary = 'top bottom'
         pt_vals = '1e-9 1e9'
         multipliers = '1e-9 1e9'
-        PT_shift = 273
-        fluid_phase = 0
-        flux_function = 1e-5
+        PT_shift = 1e7
+        flux_function = 1
+        fluid_phase = 1
         use_mobility = true
         use_relperm = true
-        use_enthalpy = true
+    []
+    [pdike]
+        type = NeumannBC
+        # no liquid can flow out the left boundary because the dike is impermeable
+        variable = pliquid
+        boundary = 'left'
+        value = 0
     []
     [hright]
         type = FunctionTempEnthalpyBC
@@ -439,14 +438,14 @@
         fp = wat
         function = tfunc
         variable = h
-        boundary = 'right top'
+        boundary = 'right top bottom'
         temperature_unit = Kelvin
     []
     [hleft]
         type = FunctionDirichletBC
         variable = h
         boundary = 'left'
-        function = edikefunc
+        function = dikefunc2
     []
     # [hleft]
     #     type = FunctionTempEnthalpyBC
