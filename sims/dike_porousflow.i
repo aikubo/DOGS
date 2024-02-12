@@ -1,53 +1,88 @@
 
 [Mesh]
-  [gen1]
-    type = GeneratedMeshGenerator
+  [mesh]
+    type = CartesianMeshGenerator
     dim = 3
-    nx = 2
-    ny = 10
-    nz = 5
-    ymin = 0 #m
-    ymax = 2000 #m
-    xmin = 0 
-    xmax = 10 #m
-    zmin = 0
-    zmax= 100
-    boundary_name_prefix = "dike"
+    ix = '5 10' 
+    dx = '10 1000'
+    iy = 20
+    dy = 2000 
+    iz = 5
+    dz = 250
+    subdomain_id = ' 0 1 '
+    show_info = true
   []
-  [gen2]
-    type = GeneratedMeshGenerator
-    dim = 3
-    nx = 10
-    ny = 20
-    nz = 5
-    ymin = 0 #m
-    ymax = 2000 #m
-    xmin = 0
-    xmax = 1000 #m
-    zmin = 0
-    zmax= 100
-    boundary_name_prefix = "host"
+  [interface]
+    type = SideSetsBetweenSubdomainsGenerator
+    input = mesh
+    primary_block = '1'
+    paired_block = '0'
+    new_boundary = 'interface'
+    show_info = true
   []
-  [smg]
-    type = StitchedMeshGenerator
-    inputs = 'gen1 gen2'
-    clear_stitched_boundary_ids = true
-    stitch_boundaries_pairs = 'dike_right host_left'
-  []
-  [dike]
-    type = SubdomainBoundingBoxGenerator
-    input = smg
-    top_right = '10 2000 100'
-    bottom_left = '0 0 0'
-    block_id = 1
-  []    
   [rename]
     type = RenameBlockGenerator
-    input = dike
+    input = interface
     old_block = '0 1'
-    new_block = 'wallrock dike'
+    new_block = 'dike wallrock'
+    show_info = true
   []
-  final_generator = rename
+  [sidesets1]
+    type = SideSetsAroundSubdomainGenerator
+    input = rename
+    block = 'dike'
+    normal = '0 1 0'
+    new_boundary = 'dike_top'
+  []
+  [sidesets2]
+    type = SideSetsAroundSubdomainGenerator
+    input = sidesets1
+    block = 'dike'
+    normal = '0 -1 0'
+    new_boundary = 'dike_bottom'
+  []
+  [sidesets3]
+    type = SideSetsAroundSubdomainGenerator
+    input = sidesets2
+    block = 'dike'
+    normal = '-1 0 0'
+    new_boundary = 'dike_left'
+  []
+  [sidesets4]
+    type = SideSetsAroundSubdomainGenerator
+    input = sidesets3
+    block = 'dike'
+    normal = '1 0 0'
+    new_boundary = 'dike_right'
+  []
+  [sidesets5]
+    type = SideSetsAroundSubdomainGenerator
+    input = sidesets4
+    block = 'wallrock'
+    normal = '0 1 0'
+    new_boundary = 'host_top'
+  []
+  [sidesets6]
+    type = SideSetsAroundSubdomainGenerator
+    input = sidesets5
+    block = 'wallrock'
+    normal = '0 -1 0'
+    new_boundary = 'host_bottom'
+  []
+  [sidesets7]
+    type = SideSetsAroundSubdomainGenerator
+    input = sidesets6
+    block = 'wallrock'
+    normal = '1 0 0'
+    new_boundary = 'host_right'
+  []
+  [sidesets8]
+    type = SideSetsAroundSubdomainGenerator
+    input = sidesets7
+    block = 'wallrock'
+    normal = '-1 0 0'
+    new_boundary = 'host_left'
+  []
 []
 
 [GlobalParams]
@@ -80,6 +115,7 @@
     variable = temperature
     property = temperature
     execute_on = 'initial timestep_end'
+    block = 'wallrock'
   []
   [darcy_vel_x_kernel]
     type = PorousFlowDarcyVelocityComponent
@@ -87,6 +123,7 @@
     variable = water_darcy_vel_x
     fluid_phase = 0                            
     execute_on = 'initial timestep_end'
+    block = 'wallrock'
   []
   [darcy_vel_y_kernel]
     type = PorousFlowDarcyVelocityComponent
@@ -94,6 +131,7 @@
     variable = water_darcy_vel_y
     fluid_phase = 0                             
     execute_on = 'initial timestep_end'
+    block = 'wallrock'
   []
   [pressure_gas]
     type = PorousFlowPropertyAux
@@ -101,14 +139,26 @@
     property = pressure
     phase = 1
     execute_on = 'initial timestep_end'
+    block = 'wallrock'
   []
 []
 
 [Variables]
   [pliquid]
+    order = SECOND
+    family = LAGRANGE
+    block = 'wallrock'
   []
   [h]
+    order = SECOND
+    family = LAGRANGE
     scaling = 1e-6
+    block = 'wallrock'
+  []
+  [T_dike]
+    order = CONSTANT
+    family = MONOMIAL
+    block = 'dike'
   []
 []
 
@@ -121,11 +171,6 @@
     type = ParsedFunction
     expression = 273+10+(2000-y)*20/1000 # geothermal 20 C per kilometer
   []
-  [dikefunc]
-    type = ParsedFunction
-    expression = "if(t>a, 1173, 100)"
-    a = 3000 # replace with the desired value of t
-  []
 []
 
 
@@ -134,6 +179,7 @@
     type = FunctionIC
     variable = pliquid
     function = ppfunc
+    block = 'wallrock'
   []
   [hic]
     type = PorousFlowFluidPropertyFunctionIC
@@ -147,14 +193,9 @@
     block = 'wallrock'
   []
   [dike_hic]
-    type = PorousFlowFluidPropertyFunctionIC
-    porepressure = pliquid
-    property = enthalpy
-    fp = wat
-    variable = h
-    temperature = 500
-    function = dikefunc
-    temperature_unit = Kelvin
+    type = ConstantIC
+    variable = T_dike
+    value = 1173
     block = 'dike'
   []
 []
@@ -164,30 +205,24 @@
     type = FunctionDirichletBC
     variable = pliquid
     function = ppfunc
-    boundary = top
-  []
-  [pbot]
-    type = FunctionDirichletBC
-    variable = pliquid
-    function = ppfunc
-    boundary = bottom
-  []
-  [hleft]
-    type = DirichletBC
-    variable = h
-    porepressure = pliquid
-    fp = wat
-    function = dikefunc
-    boundary = right
+    boundary = 'host_top host_right host_bottom'
   []
   [hright]
-    type = FunctionTempEnthalpyBC
-    variable = h
+    type = EnthalpyTempVariableBC
     porepressure = pliquid
+    h = h
+    variable = h
+    T_solid = T_dike
+    boundary = 'interface'
     fp = wat
-    function = tfunc
-    boundary = right
   []
+  [hleft]
+    type = NeumannBCm
+    variable = T_dike
+    value = 0
+    boundary = 'dike_left dike_top dike_bottom'
+  []
+
 []
 
 [Kernels]
@@ -216,14 +251,14 @@
     variable = h
     block = 'wallrock'
   []
-  [dike_heat]
-    type = PorousFlowEnergyTimeDerivative
-    variable = h
+  [dike_conduction]
+    type = HeatConduction
+    variable = T_dike
     block = 'dike'
   []
-  [dike_cond]
-    type = PorousFlowHeatConduction
-    variable = h
+  [dike_time_derivative]
+    type = HeatConductionTimeDerivative
+    variable = T_dike
     block = 'dike'
   []
 []
@@ -234,6 +269,7 @@
     porous_flow_vars = 'pliquid h'
     number_fluid_phases = 2
     number_fluid_components = 1
+    block = 'wallrock'
   []
   [pc]
     type = PorousFlowCapillaryPressureVG
@@ -262,57 +298,59 @@
 []
 
 [Materials]
-  [watervapor]
-    type = PorousFlowFluidStateSingleComponent
-    porepressure = pliquid
-    enthalpy = h
-    temperature_unit = Celsius
-    capillary_pressure = pc
-    fluid_state = fs
-  []
-  [porosity_wallrock]
-    type = PorousFlowPorosityConst
-    porosity = 0.2
-    block = 'wallrock'
-  []
-  [permeability_wallrock]
-    type = PorousFlowPermeabilityConst
-    permeability = '1.8e-11 0 0 0 1.8e-11 0 0 0 1.8e-11'
-    block = 'wallrock'
-  []
-  [porosity_dike]
-    type = PorousFlowPorosityConst
-    porosity = 0.00
-    block = 'dike'
-  []
-  [permeability_dike]
-    type = PorousFlowPermeabilityConst
-    permeability = '0 0 0 0 0 0 0 0 0'
-    block = 'dike'
-  []
+    [watervapor]
+      type = PorousFlowFluidStateSingleComponent
+      porepressure = pliquid
+      enthalpy = h
+      temperature_unit = Celsius
+      capillary_pressure = pc
+      fluid_state = fs
+      block = 'wallrock'
+    []
+    [porosity_wallrock]
+      type = PorousFlowPorosityConst
+      porosity = 0.2
+      block = 'wallrock'
+    []
+    [permeability_wallrock]
+      type = PorousFlowPermeabilityConst
+      permeability = '1.8e-11 0 0 0 1.8e-11 0 0 0 1.8e-11'
+      block = 'wallrock'
+    []
+    [relperm_water]
+      type = PorousFlowRelativePermeabilityCorey
+      n = 2
+      phase = 0
+      s_res = 0.1
+      sum_s_res = 0.1
+    []
+    [relperm_gas]
+      type = PorousFlowRelativePermeabilityCorey
+      n = 2
+      phase = 1
+      sum_s_res = 0.1
+    []
+    [internal_energy]
+      type = PorousFlowMatrixInternalEnergy
+      density = 2400
+      specific_heat_capacity = 740
+    []
+    [rock_thermal_conductivity]
+      type = PorousFlowThermalConductivityIdeal
+      dry_thermal_conductivity = '4 0 0  0 4 0  0 0 4'
+    []
+    # dike materials
+    [thermal]
+      type = HeatConductionMaterial
+      thermal_conductivity = 2.5 #W/mC
+      specific_heat = 1100 #units: J/(kg*K)
+    []
+    [density]
+      type = GenericConstantMaterial
+      prop_names = 'density'
+      prop_values = 2600 # units: kg/m^3
+    []
 
-  [relperm_water]
-    type = PorousFlowRelativePermeabilityCorey
-    n = 2
-    phase = 0
-    s_res = 0.1
-    sum_s_res = 0.1
-  []
-  [relperm_gas]
-    type = PorousFlowRelativePermeabilityCorey
-    n = 2
-    phase = 1
-    sum_s_res = 0.1
-  []
-  [internal_energy]
-    type = PorousFlowMatrixInternalEnergy
-    density = 2400
-    specific_heat_capacity = 740
-  []
-  [rock_thermal_conductivity]
-    type = PorousFlowThermalConductivityIdeal
-    dry_thermal_conductivity = '4 0 0  0 4 0  0 0 4'
-  []
 []
 
 [Preconditioning]

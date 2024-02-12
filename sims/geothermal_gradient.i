@@ -74,6 +74,31 @@
   []
 []
 
+[Kernels] # as added by the action [PorousFlowFullySaturated]
+  [pp_time_derivative]                         # one kernel for each fluid component
+    type = PorousFlowMassTimeDerivative        # these kernels lump the fluid-component mass to the nodes to ensure superior numerical stabilization
+    variable = porepressure
+    fluid_component = 0
+  []
+  [pp_advectiveflux_kernel]  # if (_stabilization == StabilizationEnum::Full)
+    type = PorousFlowAdvectiveFlux # full upwinded advective flux of the fluid component
+    variable = porepressure
+  []
+
+  [heat_time_derivative]
+    type = PorousFlowEnergyTimeDerivative      # this kernel lumps the heat energy-density to the nodes to ensure superior numerical stabilization
+    variable = temperature
+  []
+  [heat_advectiveflux_kernel] # if (_stabilization == StabilizationEnum::Full)
+    type = PorousFlowHeatAdvection
+    variable = temperature
+  []
+  [heat_conduction]
+    type = PorousFlowHeatConduction            # weak form of $-\div (\lambda \grad T)$
+    variable = temperature
+  []
+[]
+
 [Preconditioning]
   [smp]
     type = SMP

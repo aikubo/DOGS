@@ -1,4 +1,5 @@
-# 1. start with dike with CONDUCTION ONLY
+# added custom IC with temperature profile
+
 
 [Mesh]
   type = GeneratedMesh

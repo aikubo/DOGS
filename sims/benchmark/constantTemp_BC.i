@@ -160,7 +160,7 @@
       [./error]
         # arbitrary, use-chosen name
         type = GradientJumpIndicator
-        variable = h
+        variable = pliquid
         outputs = none
       [../]
     [../]
@@ -233,6 +233,14 @@
       family = MONOMIAL
       order = CONSTANT
     []
+    [gas_darcy_vel_x]
+      family = MONOMIAL
+      order = CONSTANT
+    []
+    [gas_darcy_vel_y]
+      family = MONOMIAL
+      order = CONSTANT
+    []
     [pgas]
       family = MONOMIAL
       order = CONSTANT
@@ -281,6 +289,21 @@
       component = y
       variable = water_darcy_vel_y
       fluid_phase = 0                             
+      execute_on = 'initial timestep_end'
+    []
+    [darcy_vel_x_kernel_gas]
+      type = PorousFlowDarcyVelocityComponent
+      component = x
+      variable =gas_darcy_vel_x
+      fluid_phase = 1                            
+      execute_on = 'initial timestep_end'
+       
+    []
+    [darcy_vel_y_kernel_gas]
+      type = PorousFlowDarcyVelocityComponent
+      component = y
+      variable = gas_darcy_vel_y
+      fluid_phase = 1                             
       execute_on = 'initial timestep_end'
        
     []
