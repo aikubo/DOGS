@@ -11,12 +11,12 @@
  * 
  * based on https://github.com/idaholab/moose/discussions/25688
  */
-class PorousFlowMatrixInternalEnergy : public PorousFlowMaterialVectorBase
+class PorousFlowMatrixInternalEnergyFunction : public PorousFlowMaterialVectorBase
 {
 public:
   static InputParameters validParams();
 
-  PorousFlowMatrixInternalEnergy(const InputParameters & parameters);
+  PorousFlowMatrixInternalEnergyFunction(const InputParameters & parameters);
 
 protected:
   virtual void initQpStatefulProperties() override;

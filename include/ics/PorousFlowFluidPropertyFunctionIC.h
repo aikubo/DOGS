@@ -10,9 +10,8 @@
 #pragma once
 
 #include "PorousFlowFluidPropertyIC.h"
-#include "FunctionIC.h"
+#include "Function.h" 
 
-class SinglePhaseFluidProperties;
 
 /**
  * PorousFlowFluidPropertyFunctionIC calculates an initial value for a fluid property
@@ -24,9 +23,6 @@ public:
   static InputParameters validParams();
 
   PorousFlowFluidPropertyFunctionIC(const InputParameters & parameters);
-
-  
-
 
 
 protected:
