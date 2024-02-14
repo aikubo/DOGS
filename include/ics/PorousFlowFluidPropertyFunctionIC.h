@@ -9,7 +9,8 @@
 
 #pragma once
 
-#include "InitialCondition.h"
+#include "PorousFlowFluidPropertyIC.h"
+#include "FunctionIC.h"
 
 class SinglePhaseFluidProperties;
 
@@ -17,26 +18,23 @@ class SinglePhaseFluidProperties;
  * PorousFlowFluidPropertyFunctionIC calculates an initial value for a fluid property
  * (such as enthalpy) using pressure and temperature in the single phase regions.
  */
-class PorousFlowFluidPropertyFunctionIC : public InitialCondition
+class PorousFlowFluidPropertyFunctionIC : public PorousFlowFluidPropertyIC
 {
 public:
   static InputParameters validParams();
 
   PorousFlowFluidPropertyFunctionIC(const InputParameters & parameters);
 
-  virtual Real value(const Point & p) override;
+  
+
+
 
 protected:
-  /// Porepressure (Pa)
-  const VariableValue & _porepressure;
-  /// Fluid temperature (C or K)
-  const VariableValue & _temperature;
-  /// Enum of fluid properties that can be set using this IC
-  const enum class PropertyEnum { ENTHALPY, INTERNAL_ENERGY, DENSITY } _property_enum;
-  /// FluidProperties user object
-  const SinglePhaseFluidProperties & _fp;
-  /// Conversion from degrees Celsius to degrees Kelvin
-  const Real _T_c2k;
+    /**
+   * The value of the variable at a point.
+   */
+  virtual Real value(const Point & p) override;
   /// Function 
-   func
+  const Function & _func;
+
 };

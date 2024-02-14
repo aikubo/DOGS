@@ -8,51 +8,47 @@
 //* Licensed under LGPL 2.1, please see LICENSE for details
 //* https://www.gnu.org/licenses/lgpl-2.1.html
 
-#include "PorousFlowFluidPropertyIC.h"
+#include "PorousFlowFluidPropertyFunctionIC.h"
 #include "SinglePhaseFluidProperties.h"
+#include "Function.h"
 
-registerMooseObject("PorousFlowApp", PorousFlowFluidPropertyIC);
+registerMooseObject("DikesApp", PorousFlowFluidPropertyFunctionIC);
 
 InputParameters
-PorousFlowFluidPropertyIC::validParams()
+PorousFlowFluidPropertyFunctionIC::validParams()
 {
-  InputParameters params = InitialCondition::validParams();
-  params.addRequiredCoupledVar("porepressure", "Fluid porepressure");
-  params.addRequiredCoupledVar("temperature", "Fluid temperature");
-  MooseEnum unit_choice("Kelvin=0 Celsius=1", "Kelvin");
-  params.addParam<MooseEnum>(
-      "temperature_unit", unit_choice, "The unit of the temperature variable");
-  params.addRequiredParam<UserObjectName>("fp", "The name of the user object for the fluid");
-  MooseEnum property_enum("enthalpy internal_energy density");
-  params.addRequiredParam<MooseEnum>(
-      "property", property_enum, "The fluid property that this initial condition is to calculate");
-  params.addClassDescription("An initial condition to calculate one fluid property (such as "
-                             "enthalpy) from pressure and temperature");
+  InputParameters params = PorousFlowFluidPropertyIC::validParams();
+  params.addClassDescription("PorousFlowFluidPropertyFunctionIC calculates an initial value for a fluid property "
+                            "(such as enthalpy) using a temperature function in the single phase regions.");
+  params.addRequiredParam<FunctionName>("tempfunction", "The initial temperature condition function.");
+
   return params;
 }
 
-PorousFlowFluidPropertyIC::PorousFlowFluidPropertyIC(const InputParameters & parameters)
-  : InitialCondition(parameters),
+PorousFlowFluidPropertyFunctionIC::PorousFlowFluidPropertyFunctionIC(const InputParameters & parameters)
+  : PorousFlowFluidPropertyIC(parameters),
     _porepressure(coupledValue("porepressure")),
     _temperature(coupledValue("temperature")),
     _property_enum(getParam<MooseEnum>("property").getEnum<PropertyEnum>()),
     _fp(getUserObject<SinglePhaseFluidProperties>("fp")),
-    _T_c2k(getParam<MooseEnum>("temperature_unit") == 0 ? 0.0 : 273.15)
+    _T_c2k(getParam<MooseEnum>("temperature_unit") == 0 ? 0.0 : 273.15),
+    _func(getFunction("function"))
 {
 }
 
 Real
-PorousFlowFluidPropertyIC::value(const Point & /*p*/)
+PorousFlowFluidPropertyFunctionIC::value(const Point & p)
 {
-  // The FluidProperties userobject uses temperature in K
-  const Real Tk = _temperature[_qp] + _T_c2k;
-
+  // call temperature function  
+  const Real Tk = _func.value(_t, p) + _T_c2k;
   // The fluid property
   Real property = 0.0;
+
 
   switch (_property_enum)
   {
     case PropertyEnum::ENTHALPY:
+      
       property = _fp.h_from_p_T(_porepressure[_qp], Tk);
       break;
 
