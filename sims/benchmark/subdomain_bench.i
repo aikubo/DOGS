@@ -13,7 +13,7 @@
   []
   [rename]
     type = RenameBlockGenerator
-    input = interface
+    input = mesh
     old_block = '0 1 2'
     new_block = 'dike wallrock wallrock_top'
     show_info = true
@@ -89,6 +89,7 @@
   []
   [interface]
     type = SideSetsBetweenSubdomainsGenerator
+    input = rename2
     primary_block = 'dike'
     paired_block = 'wallrock'
     new_boundary = 'interface'
