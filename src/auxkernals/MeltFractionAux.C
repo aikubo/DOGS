@@ -1,0 +1,86 @@
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
+
+#include "MeltFractionAux.h"
+#include "Function.h"
+
+registerMooseObject("dikesApp", MeltFractionAux);
+
+InputParameters
+MeltFractionAux::validParams()
+{
+  InputParameters params = FunctionAux::validParams();
+  params.addClassDescription("Auxiliary Kernel that calculates melt fraction over time.");
+  MooseEnum function_types("LINEAR PIECEWISE EXPONENTIAL", "LINEAR"); 
+  params.addRequiredParam<MooseEnum>("function_type", function_types, "The function for melt fraction to use as the value");
+  params.addParam<FunctionName>("function", "The function for melt fraction to use as the value");
+  params.addParam<Real>("tliq", "liquidus temperature (K)");
+  params.addParam<Real>("tsol", "solidus temperature (K)");
+  params.addCoupledVar("temperature", "The temperature variable");
+  params.addParam<Real>("beta", "The exponent for the exponential function");
+
+
+  return params;
+}
+
+MeltFractionAux::MeltFractionAux(const InputParameters & parameters)
+  : FunctionAux(parameters), _func(getFunction("function")),
+    _tliq(getParam<Real>("tliq")), 
+    _tsol(getParam<Real>("tsol")),
+    _temperature(coupledValue("temperature")),
+    _function_enum(getParam<MooseEnum>("function_type").getEnum<FunctionEnum>()),
+    _beta(getParam<Real>("beta"))
+    // _has_temp(isCoupled("temperature")),
+    // _is_func(_func != nullptr)
+
+{ 
+  // if ( !_has_temp)
+  //   paramError("melt fraction aux",
+  //              "Must couple with temperature");
+  // if (_function_enum == "EXPONENTIAL" && _beta <= 0)
+  //   paramError("melt fraction aux",
+  //              "Exponential function requires beta > 0");
+  // if (_function_enum == "PIECEWISE" && !_is_func)
+  //   paramError("melt fraction aux",
+  //              "Piecewise function requires a function to be defined");
+  // if (_function_enum == "LINEAR" && !_is_func)
+  //   paramError("melt fraction aux",
+  //              "Linear function requires a function to be defined");
+
+}
+
+Real
+MeltFractionAux::computeValue()
+{
+
+    switch (_function_enum)
+    {
+    case FunctionEnum::LINEAR:
+
+      return (_temperature[_qp] - _tsol) / (_tliq - _tsol);
+
+      break;
+    
+    case FunctionEnum::PIECEWISE:
+      
+      return _func.value(_temperature[_qp], Point(0,0,0));
+
+      break;
+    
+    case FunctionEnum::EXPONENTIAL:
+
+      return std::pow(((_temperature[_qp] - _tsol) / (_tliq - _tsol)), _beta);
+
+      break;
+    
+    }
+
+    
+}
+

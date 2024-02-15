@@ -171,8 +171,8 @@
   
   [AuxVariables]
     [temperature]
-      order = CONSTANT
       family = MONOMIAL
+      order = CONSTANT
     []
     [water_darcy_vel_x]
       family = MONOMIAL
@@ -223,6 +223,7 @@
       variable = temperature
       property = temperature
       execute_on = 'initial timestep_end'
+
        
     []
     [darcy_vel_x_kernel]
@@ -335,15 +336,21 @@
       variable = pliquid
       function = ppfunc
     []
+    [tempic]
+      type = FunctionIC # temperature is geothermal
+      variable = temperature
+      function = tfunc
+    []
     [hic]
-      type = PorousFlowFluidPropertyFunctionIC # custom function by aikubo
-      porepressure = pliquid # enthalpy is temperature dependent
-      property = enthalpy
-      fp = water_tab
+      type = PorousFlowFluidPropertyFunctionIC
       variable = h
       function = tfunc
+      property = enthalpy
       temperature_unit = Kelvin
+      porepressure = pliquid
+      fp = water_tab
       block = 'wallrock'
+
     []
     [perm_auxvar_IC]
         type = FunctionIC # permeability is a function of x or can be constant
