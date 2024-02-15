@@ -14,15 +14,15 @@
 
 
 /**
- * PorousFlowFluidPropertyFunctionIC calculates an initial value for a fluid property
+ * PorousFlowEnthalpyfromTemperatureIC calculates an initial value for a fluid property
  * (such as enthalpy) using pressure and temperature in the single phase regions.
  */
-class PorousFlowFluidPropertyFunctionIC : public PorousFlowFluidPropertyIC
+class PorousFlowEnthalpyfromTemperatureIC : public PorousFlowFluidPropertyIC
 {
 public:
   static InputParameters validParams();
 
-  PorousFlowFluidPropertyFunctionIC(const InputParameters & parameters);
+  PorousFlowEnthalpyfromTemperatureIC(const InputParameters & parameters);
 
 
 protected:
@@ -30,7 +30,6 @@ protected:
    * The value of the variable at a point.
    */
   virtual Real value(const Point & p) override;
-  /// Function 
-  const Function & _func;
+
 
 };
