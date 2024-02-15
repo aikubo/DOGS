@@ -10,6 +10,7 @@
 #pragma once
 
 #include "DirichletBCBase.h"
+#include "MooseEnum.h"
 
 class Function;
 class SinglePhaseFluidProperties;
@@ -30,6 +31,9 @@ protected:
   
   virtual Real computeQpValue() override;
 
+    /// Porepressure (Pa)
+  const VariableValue & _porepressure;
+
   /// fluid properties object
   const SinglePhaseFluidProperties & _fp;
 
@@ -41,5 +45,8 @@ protected:
 
     /// Conversion from degrees Celsius to degrees Kelvin
   const Real _T_c2k;
+
+
+
 
 };

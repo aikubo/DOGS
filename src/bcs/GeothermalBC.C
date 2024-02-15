@@ -10,6 +10,8 @@
 #include "GeothermalBC.h"
 #include "Function.h"
 #include "SinglePhaseFluidProperties.h"
+#include "MooseEnum.h"
+
 
 
 registerMooseObject("dikesApp", GeothermalBC);
@@ -28,17 +30,18 @@ GeothermalBC::validParams()
   MooseEnum unit_choice("Kelvin=0 Celsius=1", "Kelvin");
   params.addParam<MooseEnum>(
       "temperature_unit", unit_choice, "The unit of the temperature variable");
+  params.addRequiredCoupledVar("porepressure", "Fluid porepressure");
 
   return params;
 }
 
 GeothermalBC::GeothermalBC(const InputParameters & parameters)
   : DirichletBCBase(parameters), 
-  _func(getFunction("function"))
-  _fp(getUserObject<SinglePhaseFluidProperties>("fp"),
+  _func(getFunction("function")),
+  _fp(getUserObject<SinglePhaseFluidProperties>("fp")),
   _property_enum(getParam<MooseEnum>("property").getEnum<PropertyEnum>()),
-  _T_c2k(getParam<MooseEnum>("temperature_unit") == 0 ? 0.0 : 273.15)
-  
+  _T_c2k(getParam<MooseEnum>("temperature_unit") == 0 ? 0.0 : 273.15),
+  _porepressure(coupledValue("porepressure"))
 
 {
 }

@@ -429,7 +429,7 @@
       use_relperm = true
   []
   [hright]
-    type = FunctionTempEnthalpyBC
+    type = GeothermalBC
     # custom function by aikubo
     # enthalpy is temperature and pressure dependent
     # far field temperature is constant 
@@ -440,6 +440,7 @@
     variable = h
     boundary = 'right top bottom'
     temperature_unit = Kelvin
+    property = enthalpy
   []
   [pdike]
         type = NeumannBC
