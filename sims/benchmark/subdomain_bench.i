@@ -342,6 +342,7 @@
       variable = h
       function = tfunc
       temperature_unit = Kelvin
+      block = 'wallrock'
     []
     [perm_auxvar_IC]
         type = FunctionIC # permeability is a function of x or can be constant
@@ -454,7 +455,6 @@
     boundary = 'dike_left dike_bottom'
     value = 700000
   []
-  
 
   []
   
@@ -576,10 +576,9 @@
   []
   
   [Postprocessors]
-    [bcleft_gassat] #check boundary behaves as expected
-        type = SideAverageValue
+    [max_gassat] #check boundary behaves as expected
+        type = ElementExtremeValue
         variable = gas_sat
-        boundary = 'left'
         execute_on = 'initial timestep_end'
     []
     [bcleft_pp] #check boundary behaves as expected
