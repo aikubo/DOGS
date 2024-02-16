@@ -1,22 +1,64 @@
+# enthalpy set to 700000 in dike and 1.4e8 Pressures cause pressure out of bounds error
+# tried turning off kernals in dike and get -inf pressure
+# tried removing neumann bc around dike 
+# tried making porosity and perm the same as in the wall rock 
+# reduced enthalpy to 100000 and first timestep runs 
+# then Segmentation fault (core dumped)
+# trying dbg
+# i think it is related to mesh adaptivity 
+# i get this error 
+# Time Step 2, time = 15, dt = 10
+# We caught a libMesh error in ThreadedElementLoopBase:Assertion `comp < this->n_comp(s,var)' failed.
+# comp = 0
+# this->n_comp(s,var) = 0
+
+
+# Stack frames: 16
+# 0: libMesh::print_trace(std::ostream&)
+# 1: libMesh::MacroFunctions::report_error(char const*, int, char const*, char const*, std::ostream&)
+# 2: /home/akh/myprojects/moose_projects/moose/framework/libmoose-dbg.so.0(+0xe41e63) [0x7ffff1641e63]
+# 3: UpdateErrorVectorsThread::onElement(libMesh::Elem const*)
+# 4: ThreadedElementLoopBase<libMesh::StoredRange<libMesh::MeshBase::const_element_iterator, libMesh::Elem const*> >::operator()(libMesh::StoredRange<libMesh::MeshBase::const_element_iterator, libMesh::Elem const*> const&, bool)
+# 5: /home/akh/myprojects/moose_projects/moose/framework/libmoose-dbg.so.0(+0x1f42069) [0x7ffff2742069]
+# 6: Adaptivity::updateErrorVectors()
+# 7: FEProblemBase::computeMarkers()
+# 8: Transient::endStep(double)
+# 9: Transient::execute()
+# 10: MooseApp::executeExecutioner()
+# 11: MooseApp::run()
+# 12: main
+# 13: /lib/x86_64-linux-gnu/libc.so.6(+0x29d90) [0x7fffe5c29d90]
+# 14: __libc_start_main
+# 15: /home/akh/myprojects/moose_projects/dikes/dikes-dbg(+0x3079) [0x555555557079]
+# [0] /home/akh/miniforge/envs/moose/libmesh/include/libmesh/dof_object.h, line 1031, compiled Feb 16 2024 at 12:14:35
+
+# commented out adaptivity and it runs
+# but enthalpy is low enough there is not gas saturation 
+# maybe i need to increase it slowly 
+# added ramp function 
+# still get the same error but halfway through the ramp at 270 s 
+# now it's diverging because nl solve doesn't converge (no pressure error)
+# residual for H is 10e7 higher than for P
+
 
 [Mesh]
   [mesh]
     type = CartesianMeshGenerator
     dim = 2
-    ix = '5 20' 
+    ix = '15 30' 
     dx = '10 2000'
     iy = '19 1'
     dy = '1900 100' 
     subdomain_id = ' 0 1
                      2 1'
-    show_info = true
+    
   []
   [rename]
     type = RenameBlockGenerator
     input = mesh
     old_block = '0 1 2'
     new_block = 'dike wallrock wallrock_top'
-    show_info = true
+    
   []
   [sidesets1]
     type = SideSetsAroundSubdomainGenerator
@@ -97,36 +139,36 @@
 []
 
 
-  [Adaptivity]
-    marker = errorfrac # this specifies which marker from 'Markers' subsection to use
-    steps = 2 # run adaptivity 2 times, recomputing solution, indicators, and markers each time
+  # [Adaptivity]
+  #   marker = errorfrac # this specifies which marker from 'Markers' subsection to use
+  #   steps = 2 # run adaptivity 2 times, recomputing solution, indicators, and markers each time
   
-    # Use an indicator to compute an error-estimate for each element:
-    [./Indicators]
-      # create an indicator computing an error metric for the convected variable
-      [./error]
-        # arbitrary, use-chosen name
-        type = GradientJumpIndicator
-        variable = pliquid
-        outputs = none
-        block = 'wallrock'
-      [../]
-    [../]
+  #   # Use an indicator to compute an error-estimate for each element:
+  #   [./Indicators]
+  #     # create an indicator computing an error metric for the convected variable
+  #     [./error]
+  #       # arbitrary, use-chosen name
+  #       type = GradientJumpIndicator
+  #       variable = pliquid
+  #       outputs = none
+  #       block = 'wallrock'
+  #     [../]
+  #   [../]
   
-    # Create a marker that determines which elements to refine/coarsen based on error estimates
-    # from an indicator:
-    [./Markers]
-      [./errorfrac]
-        # arbitrary, use-chosen name (must match 'marker=...' name above
-        type = ErrorFractionMarker
-        indicator = error # use the 'error' indicator specified above
-        refine = 0.5 # split/refine elements in the upper half of the indicator error range
-        coarsen = 0 # don't do any coarsening
-        outputs = none
-        block = 'wallrock'
-      [../]
-    [../]
-  []
+  #   # Create a marker that determines which elements to refine/coarsen based on error estimates
+  #   # from an indicator:
+  #   [./Markers]
+  #     [./errorfrac]
+  #       # arbitrary, use-chosen name (must match 'marker=...' name above
+  #       type = ErrorFractionMarker
+  #       indicator = error # use the 'error' indicator specified above
+  #       refine = 0.5 # split/refine elements in the upper half of the indicator error range
+  #       coarsen = 0 # don't do any coarsening
+  #       outputs = none
+  #       block = 'wallrock'
+  #     [../]
+  #   [../]
+  # []
   
   # [Dampers]
   #   [./limit]
@@ -322,8 +364,10 @@
         direction = RIGHT_INCLUSIVE
     []
     [edikefunc]
-        type = ParsedFunction
-        expression = 100000 # enthalpy of dike on left boundary in J/kg
+        type = ParsedFunction # enthalpy of dike on left boundary in J/kg
+        expression = 'if(t < ramp_duration, max_value*t/ramp_duration+min_value, max_value+min_value)'
+        symbol_names = 'ramp_duration max_value min_value'
+        symbol_values = '500 100000 40000' 
     []
 
   []
@@ -349,7 +393,7 @@
       temperature_unit = Kelvin
       porepressure = pliquid
       fp = water_tab
-      block = 'wallrock'
+      # block = 'wallrock'
 
     []
     [perm_auxvar_IC]
@@ -362,12 +406,12 @@
         variable = poro_aux
         function = porofunc2
     []
-    [dikeic]
-        type = ConstantIC
-        variable = h
-        value = 100000
-        block = 'dike'
-    []
+    # [dikeic]
+    #     type = ConstantIC
+    #     variable = h
+    #     value = 100000
+    #     block = 'dike'
+    # []
   []
   
   [BCs]
@@ -454,15 +498,15 @@
         type = NeumannBC
         # no liquid can flow out the left boundary because the dike is impermeable
         variable = pliquid
-        boundary = 'dike_left dike_top dike_bottom interface'
+        boundary = 'dike_left '
         value = 0
-    []
+  []
   [hdike]
-    type = DirichletBC
-    # enthalpy is constant in the dike
+    type = FunctionDirichletBC
+    # enthalpy ramps up slowly
     variable = h
-    boundary = 'dike_left dike_bottom'
-    value = 700000
+    boundary = 'dike_left'
+    function = edikefunc
   []
 
   []
@@ -506,7 +550,9 @@
       temperature_min=274
       temperature_max=1000
       pressure_min=1e5
-      pressure_max=1e9
+      pressure_max=1e8
+      error_on_out_of_bounds = false
+
 
       save_file = true
     []
@@ -533,12 +579,12 @@
       []
       [porosity_dike]
         type = PorousFlowPorosityConst
-        porosity = 0.0000001
+        porosity = 0.1
         block = 'dike'
       []
       [permeability_dike]
         type = PorousFlowPermeabilityTensorFromVar
-        perm = 1e-30
+        perm = 1e-15
         block = 'dike'
       []
       [relperm_water] # from watervapor.i

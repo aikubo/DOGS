@@ -37,11 +37,12 @@ GeothermalBC::validParams()
 
 GeothermalBC::GeothermalBC(const InputParameters & parameters)
   : DirichletBCBase(parameters), 
-  _func(getFunction("function")),
+  _porepressure(coupledValue("porepressure")),
   _fp(getUserObject<SinglePhaseFluidProperties>("fp")),
+  _func(getFunction("function")),
   _property_enum(getParam<MooseEnum>("property").getEnum<PropertyEnum>()),
   _T_c2k(getParam<MooseEnum>("temperature_unit") == 0 ? 0.0 : 273.15),
-  _porepressure(coupledValue("porepressure"))
+  
 
 {
 }
