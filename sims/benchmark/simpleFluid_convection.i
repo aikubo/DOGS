@@ -78,7 +78,7 @@
       ymax = 0
       ymin = -2000
     []
-    [heater]
+    [dike]
       type = ParsedGenerateSideset
       input = gen
       combinatorial_geometry = 'y <= -400 & x = 0'
@@ -89,11 +89,24 @@
   
   [Variables]
     [porepressure]
-
     []
     [T]
         scaling = 1e-5
+    []
+  []
 
+  [Dampers]
+    [./dampPressure]
+      type = BoundingValueNodalDamper
+      variable = porepressure
+      min_value = 1e4
+      max_value = 1e8
+    []
+    [./dampTemperature]
+      type = BoundingValueNodalDamper
+      variable = T
+      min_value = 274
+      max_value = 1000
     []
   []
   
@@ -182,6 +195,11 @@
       
       variable = darcy_vel_z
     [../]
+    [hydrostat]
+        type = FunctionAux
+        function = ppfunc
+        variable = hydrostat
+    []
   []
   
   [AuxVariables]
@@ -193,6 +211,9 @@
     [../]
     [./darcy_vel_z]
       type = MooseVariableConstMonomial
+    [../]
+    [./hydrostat]
+        type = MooseVariableConstMonomial
     [../]
   []
   
@@ -309,7 +330,7 @@
   [Functions]
     [dike_temp]
       type = ParsedFunction
-      expression = '400'      #'500-200*tanh(t/6e8)'
+      expression = '400'    
     []
     [ppfunc]
       type = ParsedFunction
@@ -330,52 +351,27 @@
       boundary = 'dike'
       value = 0
     []
-    [ptop]
-        type = NeumannBC
+    [pp_like_dirichlet]
+        type = PorousFlowPiecewiseLinearSink
         variable = porepressure
-        boundary = 'top'
-        value = 0
-    []
-    [ttop]
-        type = NeumannBC
-        variable = T
-        value = 0 
-        boundary = 'top'
-    []
-    # [ptop]
-    #     type = PorousFlowPiecewiseLinearSink
-    #     variable = porepressure
-    #     boundary = 'top'
-    #     pt_vals = '1e-9 1e9'
-    #     multipliers = '1e-9 1e9'
-    #     PT_shift = 1.0135e5
-    #     flux_function = 1e-10
-    #     use_mobility = true 
-    #     use_relperm = true
-    #     fluid_phase = 0
-    # []
-
-    # [outflow]
-    #     type = PorousFlowOutflowBC
-    #     boundary = 'right top bottom'
-    #     flux_type = heat
-    #     variable = T
-    # []
-    [pright]
-        type = FunctionDirichletBC
-        variable = porepressure
-        function = ppfunc
-        boundary = 'right bottom'
+        boundary = 'top bottom right'
+        pt_vals = '1e-9 1e9'
+        multipliers = '1e-9 1e9'
+        PT_shift = hydrostat
+        flux_function = 1e-10
+        use_mobility = true 
+        use_relperm = true
+        fluid_phase = 0
     []
   []
   
   [Preconditioning]
-    [basic]
-      type = SMP
-      full = true
-      petsc_options_iname = '-pc_type -sub_pc_type -sub_pc_factor_shift_type -pc_asm_overlap'
-      petsc_options_value = ' asm      lu           NONZERO                   2'
-    []
+    [mumps]
+        type = SMP
+        full = true
+        petsc_options_iname = '-pc_type -pc_factor_mat_solver_package'
+        petsc_options_value = ' lu       mumps'
+      []
   []
   
   [Executioner]
@@ -399,25 +395,25 @@
     []
   []
   
-  [Controls]
-    [period0]
-        type = TimePeriod
-        disable_objects = 'BoundaryCondition::t_dike_neumann'
-        enable_objects = 'BoundaryCondition::t_dike_dirichlet'
-        start_time = '0'
-        end_time = '63072000'
-        execute_on = 'initial timestep_begin'
-      []
+#   [Controls]
+#     [period0]
+#         type = TimePeriod
+#         disable_objects = 'BoundaryCondition::t_dike_neumann'
+#         enable_objects = 'BoundaryCondition::t_dike_dirichlet'
+#         start_time = '0'
+#         end_time = '63072000'
+#         execute_on = 'initial timestep_begin'
+#       []
     
-      [period2]
-        type = TimePeriod
-        disable_objects = 'BoundaryCondition::t_dike_dirichlet'
-        enable_objects = 'BoundaryCondition::t_dike_neumann'
-        start_time = '63072000'
-        end_time = '1.5e9'
-        execute_on = 'initial timestep_begin'
-      []
-[]
+#       [period2]
+#         type = TimePeriod
+#         disable_objects = 'BoundaryCondition::t_dike_dirichlet'
+#         enable_objects = 'BoundaryCondition::t_dike_neumann'
+#         start_time = '63072000'
+#         end_time = '1.5e9'
+#         execute_on = 'initial timestep_begin'
+#       []
+# []
 
 [Postprocessors]
     [neg_pressure]
