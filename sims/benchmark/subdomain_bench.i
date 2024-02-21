@@ -631,6 +631,12 @@
   []
   
   [Postprocessors]
+    [neg_pressure]
+      type = ElementExtremeValue
+      variable = pliquid
+      value_type = min
+      execute_on = 'initial timestep_end NONLINEAR'
+    []
     [max_gassat] #check boundary behaves as expected
         type = ElementExtremeValue
         variable = gas_sat
