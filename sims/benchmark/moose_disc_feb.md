@@ -1,77 +1,30 @@
-# simple 1 phase convection model with a dike
-# works fine but velocity field is a bit weird at times 
-# seems like it "draws" water from the top boundary down to base
-# the water is well mixed outside the plume associated with the dike 
-# due to this draw down
-# this is due to the BC at the top boundary which implies an "infinite well"
+Hello all (@cpgr especially) 
 
-# added porousflowpiecewiselinearsink to the top boundary to simulate a more realistic top boundary condition
-# actually seems like it runs faster
+I am working on modeling the hydrothermal system of a dike intruded into granite. I've been struggling with convergence and pressure/temperature out of range issues for a while. I've prepared a simple example to demonstrate but the goal is to eventually 
 
-# eventually getting -pressures 
-# using NodalMaxValueId to track the minimum pressure
-# first make nodal var (family = LAGRANGE, order = FIRST)
-# then parsedaux to multiply by -1
-# then nodalmaxvalueid to track the minimum value ID
-# in paraview top right near render view to split view 
-# click spreadsheet view 
-# click row and it highlights the block look for Point ID
+1. heat source (dike) turns off after two years (6.3e7 s) 
+2. use multiphase (pressure enthalpy formalation)
+3. benchmark with USGS Hydrotherm [Code](https://volcanoes.usgs.gov/software/hydrotherm/)
+4. custom heat capacity depending on temperature 
+5. couple this to a Navier Stokes flow model multiapp of flow of magma in the dike
 
-# min T is at 420 first then at 1.68e7s 404
-# min pressure always 420 
+The problem is as follows: 
+A dike intrudes into granite host rock at temperature of 500 C. It  is a constant temperature BC for 2 years then shuts off and cools (Neuman BC). 
+The boundary at the dike is impermeable to flow (NeumanBC for porepressure). 
+I've expanded the domain to include what I consider the "far field" so the right mosts boundaries 
+should be uneffected by the dike heating. 
 
-# 420: 100 0 (head of plume)
-# 404 : 500 -100  (outside plume on top of domain)
-# looks like BC does not allow for escape of hot water
-# the top is at low T and P 
-# zooming in the front of hot water reaches top boundary and is pushed down
-# it's a BC issue at the top 
+So far to deal with convergence issues I've tried the following 
+1. Using `PorousFlowPiecewiseLinearSink` BCs instead of `DirichletBC` - This helped it run longer
+2. Using `SimpleFluidProperties` instead of `Water97FluidProperties` - This helps the simulation runs to  completion but I'd like to use water properties in the long run especially for multiphase and benchmarking
+3. Changing permeablitiy - Decreasing permeability to 1e-15 causes it to fail to converge after only a few timesteps
+4. Trying different BCs such as `PorousFlowOutflowBC' didn't help. 
+5. Adding dampers to pressure and temperature. This helps a bit but not in the long run since it will eventually cause convergence issues becuase I keep getting unphysical pr. 
 
-# tried decreasing flux from 1 to 1e-5 and 1e-10
-# does not converge well at 1e-10 but fine at 1e-5
+I believe this is a boundary condition issue because when I get problems with pressure or temperature out of bounds (dampers off) it usually occurs on the top right corner or left corner. 
 
-# trying adding a heat bc at top
 
-# noticed that I forgot to delete the dirichlet bc on top 
-# and scaling was bad 
-# got rid of nl_res_tol too 
-
-#convergence is less fast now but we'res seeing different 
-# points for the min pressure and min temperature
-# min T 585, 480, 421 // min P 440
-
-# 440 is top right corner
-# linear solve is having more problems less of the out of range but 
-# it still occurs sometimes
-# could increase l_max_its to 1000
-# slightly better with right BC
-# linear solve is decreasing just not very fast
-# timesteps are much smaller than before
-
-# now the plume can hit the top and exit :D
-# more physical now
-
-# looked at paraview and some weird stuff is happening
-# plume looks good an normal but at ~1.17e6 it spreads out a lot 
-# to the whole domain 
-# this is not due to the BC dike shutting off
-# might be edge effects?
-# increasing size of domain seems to help convergence some 
-# increased x and lowered the depth of the dike 
-
-# tried porousflowsink heat BC and it didn't help much 
-# went back to dirichlet BC for top temperature and it's better
-# still getting out of range temperatures soemtimes but it just cuts the step and continues
-
-# heat capacity was 0, increased to 750, heat conductivity was 1, increased to 4
-# and decreased permeability to 1.21e-12 and now it does not converge at ALL
-# increased permeability to 1.21e-10 and it's now goes to 1.7e7
-
-# added aux variable hydrostat to track what the pressure should be across the domain 
-# pipe this into porousflowsink to get better BCS 
-#
-# tried simple fluid properties and it doesn't really make a difference
-
+```
 [Mesh]
     [gen]
       type = GeneratedMeshGenerator
@@ -79,9 +32,9 @@
       nx = 20
       ny = 20
       xmin = 0
-      xmax = 4000
+      xmax = 4000 # units are meters
       ymax = 0
-      ymin = -2000
+      ymin = -2000 # units are meters
     []
     [dike]
       type = ParsedGenerateSideset
@@ -104,44 +57,17 @@
     [./dampPressure]
       type = BoundingValueNodalDamper
       variable = porepressure
-      min_value = 1e4
-      max_value = 1e8
+      min_value = 1e4 # units Pa
+      max_value = 1e8 # units Pa
     []
     [./dampTemperature]
       type = BoundingValueNodalDamper
       variable = T
-      min_value = 274
+      min_value = 274 # units K 
       max_value = 1000
     []
   []
-  
-  [AuxVariables]
-    [tswitch]
-        family = LAGRANGE
-        order = FIRST
-    []
-    [pswitch]
-        family = LAGRANGE
-        order = FIRST
-    []
-  []
-  
-  [AuxKernels]
-    [./tswitch]
-        type = ParsedAux
-        variable = tswitch
-        coupled_variables = 'T'
-        expression = 'T*-1'
-    [../]
-    [./pswitch]
-        type = ParsedAux
-        variable = pswitch
-        coupled_variables = 'porepressure'
-        expression = 'porepressure*-1'
-    [../]
-
-  []
-  
+    
   [ICs]
     [hydrostatic]
       type = FunctionIC
@@ -171,7 +97,7 @@
   
   [FluidProperties]
     [water]
-      type = SimpleFluidProperties
+      type = Water97FluidProperties
     []
   []
   
@@ -200,11 +126,6 @@
       
       variable = darcy_vel_z
     [../]
-    [hydrostat]
-        type = FunctionAux
-        function = ppfunc
-        variable = hydrostat
-    []
   []
   
   [AuxVariables]
@@ -217,12 +138,10 @@
     [./darcy_vel_z]
       type = MooseVariableConstMonomial
     [../]
-    [./hydrostat]
-        type = MooseVariableConstMonomial
-    [../]
   []
   
   [Kernels]
+    # from porousflow/examples/naturalconvection.i
     [./PorousFlowUnsaturated_HeatConduction]
       type = PorousFlowHeatConduction
       
@@ -319,7 +238,7 @@
     []
     [permeability]
       type = PorousFlowPermeabilityConst
-      permeability = '1.21E-15 0 0   0 1.21E-15 0   0 0 1.21E-15'
+      permeability = '1.21E-10 0 0   0 1.21E-10 0   0 0 1.21E-10'
     []
     [Matrix_internal_energy]
       type = PorousFlowMatrixInternalEnergy
@@ -356,17 +275,11 @@
       boundary = 'dike'
       value = 0
     []
-    [pp_like_dirichlet]
-        type = PorousFlowPiecewiseLinearSink
+    [pright]
+        type = FunctionDirichletBC
         variable = porepressure
-        boundary = 'top bottom right'
-        pt_vals = '1e-9 1e9'
-        multipliers = '1e-9 1e9'
-        PT_shift = hydrostat
-        flux_function = 1e-10
-        use_mobility = true 
-        use_relperm = true
-        fluid_phase = 0
+        function = ppfunc
+        boundary = 'right bottom top'
     []
   []
   
@@ -381,13 +294,12 @@
   
   [Executioner]
     type = Transient
-    end_time = 3.0e9  # 31536000= 1 year, 1.5e9 = 47.5 years
+    end_time = 1.5e9  # 31536000= 1 year, 1.5e9 = 47.5 years
     dtmax = 1e6
     nl_max_its = 30
     l_max_its = 100
     dtmin = 100
-    steady_state_detection = true 
-    steady_state_tolerance = 1e-9
+
     [TimeStepper]
       type = IterationAdaptiveDT
       dt = 1000
@@ -401,39 +313,6 @@
     []
   []
   
-  [Controls]
-    [period0]
-        type = TimePeriod
-        disable_objects = 'BoundaryCondition::t_dike_neumann'
-        enable_objects = 'BoundaryCondition::t_dike_dirichlet'
-        start_time = '0'
-        end_time = '63072000'
-        execute_on = 'initial timestep_begin'
-      []
-    
-      [period2]
-        type = TimePeriod
-        disable_objects = 'BoundaryCondition::t_dike_dirichlet'
-        enable_objects = 'BoundaryCondition::t_dike_neumann'
-        start_time = '63072000'
-        end_time = '1.5e9'
-        execute_on = 'initial timestep_begin'
-      []
-[]
-
-[Postprocessors]
-    [neg_pressure]
-        type = NodalMaxValueId
-        variable = pswitch
-        execute_on = 'initial timestep_end NONLINEAR'
-      []
-      [min_temperature]
-        type = NodalMaxValueId
-        variable = tswitch
-        execute_on = 'initial timestep_end NONLINEAR'
-      []
-[]
-
 [Outputs]
     [Exodus]
         type = Exodus
@@ -445,9 +324,6 @@
     show_var_residual_norms = true
 []
 
-  # If you uncomment this it will print out all the kernels and materials that the PorousFlowFullySaturated action generates
-  #[Problem]
-  #  type = DumpObjectsProblem
-  #  dump_path = PorousFlowFullySaturated
-  #[]
-  
+
+```
+
