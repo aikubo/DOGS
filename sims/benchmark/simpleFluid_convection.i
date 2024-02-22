@@ -70,7 +70,12 @@
 # added aux variable hydrostat to track what the pressure should be across the domain 
 # pipe this into porousflowsink to get better BCS 
 #
-# tried simple fluid properties and it doesn't really make a difference
+# tried simple fluid properties and works much better
+# looked at convergence criteria  and did the scaling analysis 
+# Rfluid ~ V*10e-12
+# Rthermal ~ V*10
+# applied inverscaling so R~1 and now the convergence is fast! only a few seconds for the whole model
+# it might also be faster because i reduced how many times it writes to Exodus 
 
 [Mesh]
     [gen]
@@ -89,14 +94,15 @@
       combinatorial_geometry = 'y <= -400 & x = 0'
       new_sideset_name = dike
     []
-    uniform_refine = 1
+
   []
   
   [Variables]
-    [porepressure]
+    [porepressure] 
+      scaling = 1e12
     []
     [T]
-        scaling = 1e-5
+      scaling = 1e1
     []
   []
 
@@ -116,30 +122,39 @@
   []
   
   [AuxVariables]
-    [tswitch]
-        family = LAGRANGE
-        order = FIRST
+    [water_darcy_vel_x]
+      family = MONOMIAL
+      order = CONSTANT
     []
-    [pswitch]
-        family = LAGRANGE
-        order = FIRST
+    [water_darcy_vel_y]
+      family = MONOMIAL
+      order = CONSTANT
     []
+    [hydrostat]
+    []  
   []
   
   [AuxKernels]
-    [./tswitch]
-        type = ParsedAux
-        variable = tswitch
-        coupled_variables = 'T'
-        expression = 'T*-1'
-    [../]
-    [./pswitch]
-        type = ParsedAux
-        variable = pswitch
-        coupled_variables = 'porepressure'
-        expression = 'porepressure*-1'
-    [../]
-
+    [darcy_vel_x_kernel]
+      type = PorousFlowDarcyVelocityComponent
+      component = x
+      variable = water_darcy_vel_x
+      fluid_phase = 0                            
+      execute_on = 'initial timestep_end'
+       
+    []
+    [darcy_vel_y_kernel]
+      type = PorousFlowDarcyVelocityComponent
+      component = y
+      variable = water_darcy_vel_y
+      fluid_phase = 0                             
+      execute_on = 'initial timestep_end'
+    []
+    [hydrostat]
+      type = FunctionAux
+      function = ppfunc
+      variable = hydrostat
+  []
   []
   
   [ICs]
@@ -175,52 +190,6 @@
     []
   []
   
-  [AuxKernels]
-    [./PorousFlowActionBase_Darcy_x_Aux]
-      type = PorousFlowDarcyVelocityComponent
-      
-      component = x
-      execute_on = TIMESTEP_END
-      
-      variable = darcy_vel_x
-    [../]
-    [./PorousFlowActionBase_Darcy_y_Aux]
-      type = PorousFlowDarcyVelocityComponent
-      
-      component = y
-      execute_on = TIMESTEP_END
-      
-      variable = darcy_vel_y
-    [../]
-    [./PorousFlowActionBase_Darcy_z_Aux]
-      type = PorousFlowDarcyVelocityComponent
-      
-      component = z
-      execute_on = TIMESTEP_END
-      
-      variable = darcy_vel_z
-    [../]
-    [hydrostat]
-        type = FunctionAux
-        function = ppfunc
-        variable = hydrostat
-    []
-  []
-  
-  [AuxVariables]
-    [./darcy_vel_x]
-      type = MooseVariableConstMonomial
-    [../]
-    [./darcy_vel_y]
-      type = MooseVariableConstMonomial
-    [../]
-    [./darcy_vel_z]
-      type = MooseVariableConstMonomial
-    [../]
-    [./hydrostat]
-        type = MooseVariableConstMonomial
-    [../]
-  []
   
   [Kernels]
     [./PorousFlowUnsaturated_HeatConduction]
@@ -246,8 +215,6 @@
     [../]
     [./PorousFlowFullySaturatedUpwind_HeatAdvection]
       type = PorousFlowFullySaturatedUpwindHeatAdvection
-      
-      
       variable = T
     [../]
   []
@@ -319,7 +286,7 @@
     []
     [permeability]
       type = PorousFlowPermeabilityConst
-      permeability = '1.21E-15 0 0   0 1.21E-15 0   0 0 1.21E-15'
+      permeability = '1E-15 0 0   0 1E-15 0   0 0 1E-15'
     []
     [Matrix_internal_energy]
       type = PorousFlowMatrixInternalEnergy
@@ -421,33 +388,14 @@
       []
 []
 
-[Postprocessors]
-    [neg_pressure]
-        type = NodalMaxValueId
-        variable = pswitch
-        execute_on = 'initial timestep_end NONLINEAR'
-      []
-      [min_temperature]
-        type = NodalMaxValueId
-        variable = tswitch
-        execute_on = 'initial timestep_end NONLINEAR'
-      []
-[]
-
 [Outputs]
     [Exodus]
         type = Exodus
         execute_on = 'final timestep_end FAILED'
+        minimum_time_interval = 1e5
     []
 []
 
 [Debug]
     show_var_residual_norms = true
 []
-
-  # If you uncomment this it will print out all the kernels and materials that the PorousFlowFullySaturated action generates
-  #[Problem]
-  #  type = DumpObjectsProblem
-  #  dump_path = PorousFlowFullySaturated
-  #[]
-  
