@@ -41,9 +41,7 @@ GeothermalBC::GeothermalBC(const InputParameters & parameters)
   _fp(getUserObject<SinglePhaseFluidProperties>("fp")),
   _func(getFunction("function")),
   _property_enum(getParam<MooseEnum>("property").getEnum<PropertyEnum>()),
-  _T_c2k(getParam<MooseEnum>("temperature_unit") == 0 ? 0.0 : 273.15),
-  
-
+  _T_c2k(getParam<MooseEnum>("temperature_unit") == 0 ? 0.0 : 273.15)
 {
 }
 

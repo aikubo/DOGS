@@ -1,0 +1,50 @@
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
+
+#include "NegativeFinder.h"
+#include "MooseMesh.h"
+
+registerMooseObject(dikesApP, "NegativeFinder");
+
+InputParameters
+NegativeFinder::validParams()
+{
+  InputParameters params = GeneralPostprocessor::validParams();
+  params.addRequiredParam<CoupledVariableValue>("var", "The variable to search for negative values");
+  params.addParam<const Real>("threshold", 0.0, "The threshold value for the search");
+  params.addClassDescription(
+      "A postprocessor for reporting location of negative values .");
+
+  return params;
+}
+
+NegativeFinder::NegativeFinder(const InputParameters & parameters)
+  : GeneralPostprocessor(parameters),
+  _threshold(getParam<const Real>("threshold")),
+  _var(getCoupledVariableValue("var")),
+{
+}
+
+NegativeFinder::initialize()
+{
+  _value = 0.0;
+  _point = Point();
+}
+
+NegativeFinder::execute()
+{
+
+  MooseMesh & mesh = _problem_ptr->mesh();
+
+}
+
+NegativeFinder::getValue() const
+{
+  return _value;
+}

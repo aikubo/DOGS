@@ -36,23 +36,7 @@ MeltFractionAux::MeltFractionAux(const InputParameters & parameters)
     _temperature(coupledValue("temperature")),
     _function_enum(getParam<MooseEnum>("function_type").getEnum<FunctionEnum>()),
     _beta(getParam<Real>("beta"))
-    // _has_temp(isCoupled("temperature")),
-    // _is_func(_func != nullptr)
-
 { 
-  // if ( !_has_temp)
-  //   paramError("melt fraction aux",
-  //              "Must couple with temperature");
-  // if (_function_enum == "EXPONENTIAL" && _beta <= 0)
-  //   paramError("melt fraction aux",
-  //              "Exponential function requires beta > 0");
-  // if (_function_enum == "PIECEWISE" && !_is_func)
-  //   paramError("melt fraction aux",
-  //              "Piecewise function requires a function to be defined");
-  // if (_function_enum == "LINEAR" && !_is_func)
-  //   paramError("melt fraction aux",
-  //              "Linear function requires a function to be defined");
-
 }
 
 Real

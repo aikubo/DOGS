@@ -308,7 +308,7 @@
     []
     [permeability]
       type = PorousFlowPermeabilityConst
-      permeability = '1E-13 0 0   0 1E-13 0   0 0 1E-13'
+      permeability = '1E-10 0 0   0 1E-10 0   0 0 1E-10'
     []
     [Matrix_internal_energy]
       type = PorousFlowMatrixInternalEnergy

@@ -1,0 +1,77 @@
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
+
+#pragma once
+
+#include "GeneralPostprocessor.h"
+#include "MooseMesh.h"
+
+struct NegativeOutputData
+{
+  unsigned int _var;
+  std::set<SubdomainID> _subdomain_ids;
+  dof_id_type _id;
+  Point _point;
+  Real _value;
+  bool _is_scalar;
+  bool _is_nodal;
+
+  NegativeOutputData()
+    : _var(0),
+      _subdomain_ids(),
+      _id(0),
+      _point(Point()),
+      _value(0.0),
+      _is_scalar(false),
+      _is_nodal(true)
+  {
+  }
+
+  NegativeOutputData(unsigned int var,
+                                        std::set<SubdomainID> subdomain_ids,
+                                        dof_id_type id,
+                                        Point point,
+                                        Real value,
+                                        bool is_scalar = false,
+                                        bool is_nodal = true)
+    : _var(var),
+      _subdomain_ids(subdomain_ids),
+      _id(id),
+      _value(value),
+      _point(point),
+      _is_scalar(is_scalar),
+      _is_nodal(is_nodal)
+  {
+  }
+};
+
+
+class NegativeFinder : public GeneralPostprocessor
+{
+public:
+  static InputParameters validParams();
+
+  NegativeFinder(const InputParameters & parameters);
+
+  virtual void initialize() override {}
+  virtual void execute() override;
+  virtual Real getValue() const override;
+
+protected:
+  /// The extreme value
+  Real & _value;
+  /// Variable to search 
+  const CoupledVariableValue & _var;
+
+  /// The threshold value for the search
+  const Real & _threshold;
+
+  /// Element or Node where it occurs
+  Point & _point;
+};
