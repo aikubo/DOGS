@@ -23,7 +23,7 @@ EffectiveConductivity::validParams()
 
 EffectiveConductivity::EffectiveConductivity(const InputParameters & parameters)
   : AuxKernel(parameters),
-    _length(getCoupledVar("length")),
+    _length(getCoupledVars("length")),
     _temperature_grad((coupledGradient("temperature"))),
     _enthalpy(getGenericMaterialProperty<std::vector<Real>, false>("enthalpy"))
 {
@@ -45,15 +45,15 @@ EffectiveConductivity::computeValue()
   {
     Real neighbor_enthalpy =
         _neighbor_elem->getMaterialPropertyValue<std::vector<Real>>(_enthalpy)[neighbor_idx];
-    difference = neighbor_enthalpy - _enthalpy[qp]; // Calculate difference
+    difference = neighbor_enthalpy - _enthalpy[_qp]; // Calculate difference
 
     // Store difference in the property vector
-    _enthalpy_difference[qp] = difference;
+    _enthalpy_difference[_qp] = difference;
   }
 
   // assume change in pressure over the element is small
   // so q = dH
   // k = q / (deltaT * L)
 
-  return _enthalpy_difference[qp] / (_length[qp] * _temperature_grad[qp]);
+  return _enthalpy_difference[_qp] / (_length[_qp] * _temperature_grad[_qp]);
 }
