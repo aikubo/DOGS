@@ -353,7 +353,7 @@
     []
     [dikefunc2]
         type = ParsedFunction
-        expression = 'if( (y<=1900),500000,4000)' # temperature of dike on left boundary in K for Y= 1000-1700 only
+        expression = 'if( (y<=1900),550000,4000)' # temperature of dike on left boundary in K for Y= 1000-1700 only
     []
     [permfunc]
         type = ParsedFunction
@@ -581,20 +581,11 @@
   []
   
   [Postprocessors]
-    [hpost]
-      type = ElementAverageValue
-      variable = h
-      execute_on = 'initial timestep_end'
-    []
-    [ppost]
-      type = ElementAverageValue
-      variable = pliquid
-      execute_on = 'initial timestep_end'
-    []
-    [tpost]
-      type = ElementAverageValue
-      variable = temperature
-      execute_on = 'initial timestep_end'
+    [bcleft_gassat] #check boundary behaves as expected
+        type = SideAverageValue
+        variable = gas_sat
+        boundary = 'left'
+        execute_on = 'initial timestep_end'
     []
     [bcleft_pp] #check boundary behaves as expected
         type = SideAverageValue

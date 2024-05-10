@@ -1,45 +1,16 @@
-# using no error version of water97 
-# with dampers this helps 
-# but was not enough to prevent divergence around 1500s 
-# does the thing where residuals get bigger and bigger 
-# then just stop changing altogether
+# can you have an adaptive BC?
+# perfectly matched layers 
+# check the pressures at the BC and the flux through the boundary 
+# doesn't have to be atmospheric
 
-# added h linearsink at bottom boundary and it converges great 
-# but max gas sat is always 0 
-# so I think there is no phase change 
-# now it still does that thing with the residuals but reaches 30 timesteps 
+# nusselt number 
+# scaling 
+# heat flux at surface - can caluculate it from space 
+# what is the thermal annomaly from space?
 
-# h dirichlet at bottom boundary seems to actually work better 
-# but still no phase change
-
-# tried a new BC with conversion from temperature to enthalpy
-# causes convergence problems immediately with 
-# Nonlinear solve did not converge due to DIVERGED_DTOL iterations 1
-
-# tried SVD to see if it's illposed or illconditioned
-#  0 Nonlinear |R| = 3.988235e-01
-#SVD: condition number 4.742842658608e+09, 0 of 882 singular values are (nearly) zero
-#SVD: smallest singular values: 2.108440173922e-10 2.108443791899e-10 2.255229731185e-10 3.327428484887e-10 3.861923369304e-10
-#SVD: largest singular values : 1.000000000000e+00 1.000000000000e+00 1.000000000000e+00 1.000000000000e+00 1.000000000000e+00
-# no singular values are zero but condition number is high
-# so it's illconditioned
-
-# first automatic scaling
-# added flag to recalculate scaling every timestep
-# so that might help the thing I was observing where the residual of h is much larger than the residual of pliquid
-# SVD: condition number 8.468878940198e+04, 0 of 882 singular values are (nearly) zero
-
-# back to old preconditioner 
-# 49 Nonlinear |R| = 9.490993e-06
-#       0 Linear |R| = 9.490993e-06
-#       1 Linear |R| = 3.557695e-20
-#     |residual|_2 of individual variables:
-#                     pliquid: 9.41424e-06
-#                     h:       1.20551e-08
-# [DBG][0] Max 1 residuals
-# [DBG][0] 1.36895623394106e-06 'pliquid' in subdomain(s) {''} at node 232: (x,y,z)=(       0,    -1010,        0)
-# 50 Nonlinear |R| = 9.414247e-06
-# going to reduce nl convergence settings
+#trying nonzero cap pressure 
+# might have issues because cap pressure is infinite when sat water is low 
+# BC pressure is what is used in the watervapor.i model
 
 
 [Mesh]
@@ -66,14 +37,14 @@
     [./limit]
       type = BoundingValueNodalDamper
       variable = pliquid
-      max_value = 1e9
-      min_value = -1e4
+      max_value = 1e8
+      min_value = 1e1
     [../]
     [./limit2]
         type = BoundingValueNodalDamper
         variable = h
-        max_value = 1e8
-        min_value = -1e4
+        max_value = 1e6
+        min_value = 1e2
 
     [../]
   []
@@ -98,7 +69,7 @@
     []
     [fs]
       type = PorousFlowWaterVapor
-      water_fp = water97
+      water_fp = water97 # you can't use tabulated fluids here!
       capillary_pressure = pc
     []
   []
@@ -201,32 +172,24 @@
         function = ppfunc
         variable = hydrostat
     []
-    [geotherm]
-      type = FunctionAux
-      variable = geotherm
-      function = tfuncSteam
-      execute_on = 'initial timestep_end'
-    []
   []
   
   [Variables]
     [pliquid]
       order = FIRST
       family = LAGRANGE
-      #scaling = 1e-3
+      scaling = 1e1
     []
     [h]
       order = FIRST
       family = LAGRANGE
-      #scaling = 1e-4
-
     []
   []
   
   [Functions]
-    [dike_cooling]
+    [dike_temp]
         type = ParsedFunction
-        expression = '520*(1-exp(-t/5000))+(285+(-y)*10/1000)'    
+        expression = '5000*(1-exp(-t/5000))+40000'    
       []
     [ppfunc]
       type = ParsedFunction
@@ -236,10 +199,6 @@
       type = ParsedFunction
       expression = 285+(-y)*10/1000 # geothermal 10 C per kilometer in kelvin
     []
-    [tfuncSteam]
-      type = ParsedFunction
-      expression = 285+(-y)*10/1000+120*(1-(x/4000)) # geothermal 10 C per kilometer in kelvin
-    []
   []
   
 
@@ -248,7 +207,7 @@
     [t_ic]
       type = FunctionIC
       variable = geotherm
-      function = tfuncSteam
+      function = tfunc
     []
     [ppic]
       type = FunctionIC # pressure is hydrostatic
@@ -268,21 +227,10 @@
   []
   
   [BCs]
-    # [t_dike_dirichlet]
-    #     type = FunctionDirichletBC
-    #     variable = h
-    #     function = dike_temp
-    #     boundary = 'dike'
-    # []
-
     [t_dike_dirichlet]
-        type = TemperatureToEnthalpyConversionBC
+        type = FunctionDirichletBC
         variable = h
-        function = dike_cooling
-        fp = water97
-        property = enthalpy
-        porepressure = pliquid
-        temperature_unit = Kelvin
+        function = dike_temp
         boundary = 'dike'
     []
     [t_dike_neumann]
@@ -318,18 +266,6 @@
         use_mobility = true
         use_relperm = true
     []
-    [pdike]
-      type = NeumannBC
-      variable = pliquid
-      boundary = 'dike'
-      value = 0
-    []
-    [hbottom]
-      type = DirichletBC
-      variable = h
-      value = 1.5e5
-      boundary = 'bottom'
-    []
   []
   
   [Kernels]
@@ -362,8 +298,17 @@
  
   [FluidProperties]
     [water97]
-      type = Water97NoError    # IAPWS-IF97
+      type = Water97FluidProperties    # IAPWS-IF97
+    []
+    [water_tab]
+      type = TabulatedBicubicFluidProperties
+      fp = water97
+      temperature_min=274
+      temperature_max=1000
+      pressure_min=1
+      pressure_max=1e9
       error_on_out_of_bounds = false
+      save_file = true
     []
   []
   
@@ -407,12 +352,11 @@
   []
   
   [Preconditioning]
-    active = smp
     [smp]
       type = SMP
       full = true
-      # petsc_options_iname = '-pc_type -pc_factor_mat_solver_package'
-      # petsc_options_value = ' lu       mumps'
+      petsc_options_iname = '-pc_type -pc_factor_mat_solver_package'
+      petsc_options_value = ' lu       mumps'
     []
   []
   
@@ -420,16 +364,9 @@
     type = Transient
     solve_type = NEWTON
     end_time = 3.0e9
-    nl_abs_tol = 1.e-5
     line_search = none
-    automatic_scaling = true
-    compute_scaling_once=false
-
-    # petsc_options = '-pc_svd_monitor'
-    # petsc_options_iname = '-pc_type'
-    # petsc_options_value = 'svd'
-
-
+    dtmin = 100
+    nl_abs_tol = 1e-4
     [TimeStepper]
       type = IterationAdaptiveDT
       dt = 1000
@@ -448,11 +385,6 @@
         variable = gas_sat
         execute_on = 'initial timestep_end'
     []
-    [max_temp]
-      type = ElementExtremeValue
-      variable = temperature
-      execute_on = 'initial timestep_end'
-  []
 []
 
 [Controls]

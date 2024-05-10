@@ -1,9 +1,6 @@
-mu = 1.1
-rho = 1.1
-l = 100
-U = 1
-advected_interp_method = 'average'
-velocity_interp_method = 'rc'
+# not converging 
+# increased x nodes and the residual in x did decrease
+# increased ymax and it didn't change much 
 
 [GlobalParams]
   rhie_chow_user_object = 'rc'
@@ -24,10 +21,10 @@ velocity_interp_method = 'rc'
     dim = 2
     xmin = 0
     xmax = 10
-    ymin = ${fparse -l / 2}
-    ymax = ${fparse l / 2}
-    nx = 5
-    ny = 20
+    ymin = 0
+    ymax = 500
+    nx = 10
+    ny = 30
   []
   uniform_refine = 0
 []
@@ -46,27 +43,59 @@ velocity_interp_method = 'rc'
   []
 []
 
+[AuxVariables]
+  [rho_m]
+    type = MooseVariableFVReal
+  []
+  [mu_m]
+    type = MooseVariableFVReal
+  []
+[]
+
+[AuxKernels]
+  [rho_m]
+    type = FunctorAux
+    variable = rho_m
+    functor = density
+  []
+  [mu_m]
+    type = FunctorAux
+    variable = mu_m
+    functor = viscosity
+  []
+[]
+
+[FunctorMaterials]
+  [props]
+    type = GenericFunctorMaterial
+    prop_names = 'density viscosity'
+    prop_values = '1000 10e-3'
+  []
+[]
+
 [FVKernels]
   [mass]
     type = INSFVMassAdvection
     variable = pressure
-    advected_interp_method = ${advected_interp_method}
-    velocity_interp_method = ${velocity_interp_method}
-    rho = ${rho}
+    rho = rho_m
   []
 
+  # [u_time]
+  #   type = INSFVMomentumTimeDerivative
+  #   variable = vel_x
+  #   rho = rho_m
+  #   momentum_component = 'x'
+  # []
   [u_advection]
     type = INSFVMomentumAdvection
     variable = vel_x
-    advected_interp_method = ${advected_interp_method}
-    velocity_interp_method = ${velocity_interp_method}
-    rho = ${rho}
+    rho = rho_m
     momentum_component = 'x'
   []
   [u_viscosity]
     type = INSFVMomentumDiffusion
     variable = vel_x
-    mu = ${mu}
+    mu = mu_m
     momentum_component = 'x'
   []
   [u_pressure]
@@ -76,18 +105,22 @@ velocity_interp_method = 'rc'
     pressure = pressure
   []
 
+  # [v_time]
+  #   type = INSFVMomentumTimeDerivative
+  #   variable = vel_y
+  #   rho = rho_m
+  #   momentum_component = 'y'
+  # []
   [v_advection]
     type = INSFVMomentumAdvection
     variable = vel_y
-    advected_interp_method = ${advected_interp_method}
-    velocity_interp_method = ${velocity_interp_method}
-    rho = ${rho}
+    rho = rho_m
     momentum_component = 'y'
   []
   [v_viscosity]
     type = INSFVMomentumDiffusion
     variable = vel_y
-    mu = ${mu}
+    mu = mu_m
     momentum_component = 'y'
   []
   [v_pressure]
@@ -103,13 +136,13 @@ velocity_interp_method = 'rc'
     type = INSFVInletVelocityBC
     boundary = 'bottom'
     variable = vel_y
-    function = 10
+    functor = 1
   []
   [inlet-u]
     type = INSFVInletVelocityBC
-    boundary = 'top'
+    boundary = 'bottom'
     variable = vel_x
-    function = 0
+    functor = 0
   []
   [walls-u]
     type = INSFVNoSlipWallBC
@@ -123,22 +156,27 @@ velocity_interp_method = 'rc'
     variable = vel_y
     function = 0
   []
-  [inlet_p]
-    type = INSFVInletPressureBC
-    boundary = 'right'
+  [outlet-p]
+    type = INSFVOutletPressureBC
     variable = pressure
-    function = '100'
+    boundary = top
+    function = 0
   []
+
 []
 
 [Executioner]
   type = Steady
   solve_type = 'NEWTON'
-
+  nl_rel_tol = 1e-12
+  # [TimeStepper]
+  #   type = IterationAdaptiveDT
+  #   dt = 1e-3
+  # []
 []
 
 [Preconditioning]
-  active = FSP
+  active = SMP
   [FSP]
     type = FSP
     # It is the starting point of splitting
@@ -175,12 +213,12 @@ velocity_interp_method = 'rc'
     [u]
       vars = 'vel_x vel_y'
       petsc_options_iname = '-pc_type -pc_hypre_type -ksp_type -ksp_rtol -ksp_gmres_restart -ksp_pc_side'
-      petsc_options_value = 'hypre    boomeramg      gmres    5e-1      300                 right'
+      petsc_options_value = 'hypre    boomeramg      gmres    5e-6      300                 right'
     []
     [p]
       vars = 'pressure'
       petsc_options_iname = '-ksp_type -ksp_gmres_restart -ksp_rtol -pc_type -ksp_pc_side'
-      petsc_options_value = 'gmres    300                5e-1      jacobi    right'
+      petsc_options_value = 'gmres    300                5e-6      jacobi    right'
     []
   []
   [SMP]
@@ -194,10 +232,15 @@ velocity_interp_method = 'rc'
 [Outputs]
   print_linear_residuals = true
   print_nonlinear_residuals = true
+  
   [out]
     type = Exodus
   []
   [perf]
     type = PerfGraphOutput
   []
+[]
+
+[Debug]
+  show_var_residual_norms = true
 []
