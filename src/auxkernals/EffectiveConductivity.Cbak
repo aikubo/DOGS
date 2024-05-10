@@ -1,0 +1,59 @@
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
+
+#include "EffectiveConductivity.h"
+
+registerMooseObject("dikesApp", EffectiveConductivity);
+
+InputParameters
+EffectiveConductivity::validParams()
+{
+  InputParameters params = AuxKernel::validParams();
+  params.addClassDescription("Computes effective conductivity");
+  params.addRequiredCoupledVar("temperature", "temperature variable");
+  params.addRequiredCoupledVar("length", "Calculated length in PorousFlowElementLength");
+  return params;
+}
+
+EffectiveConductivity::EffectiveConductivity(const InputParameters & parameters)
+  : AuxKernel(parameters),
+    _length(getCoupledVars("length")),
+    _temperature_grad((coupledGradient("temperature"))),
+    _enthalpy(getGenericMaterialProperty<std::vector<Real>, false>("enthalpy"))
+{
+}
+
+Real
+EffectiveConductivity::computeValue()
+{
+  // k = (QL)/(AdeltaT)
+  // assume A = L^2
+  // k = Q / (L * deltaT)
+
+  Real difference = 0.0;
+
+  // calulate change in enthalpy over the element
+
+  // Example logic: iterate over neighbors to calculate differences
+  for (unsigned int neighbor_idx = 0; neighbor_idx < _neighbor_elem->n_nodes(); ++neighbor_idx)
+  {
+    Real neighbor_enthalpy =
+        _neighbor_elem->getMaterialPropertyValue<std::vector<Real>>(_enthalpy)[neighbor_idx];
+    difference = neighbor_enthalpy - _enthalpy[_qp]; // Calculate difference
+
+    // Store difference in the property vector
+    _enthalpy_difference[_qp] = difference;
+  }
+
+  // assume change in pressure over the element is small
+  // so q = dH
+  // k = q / (deltaT * L)
+
+  return _enthalpy_difference[_qp] / (_length[_qp] * _temperature_grad[_qp]);
+}

@@ -219,7 +219,7 @@
 [Executioner]
   type = Transient
   solve_type = NEWTON
-  end_time = 1
+  end_time = 50
   nl_abs_tol = 1e-12
 []
 
