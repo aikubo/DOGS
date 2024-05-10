@@ -7,7 +7,7 @@
     nx = 40
     ny = 20
     xmin = 0
-    xmax = 1000
+    xmax = 500
     ymax = -500
     ymin = -1500
     bias_x = 1.20
@@ -200,9 +200,10 @@
 
 
 [FluidProperties]
-  [water]
+
+[water]
     type = SimpleFluidProperties
-  []
+[]
 []
 
 [Functions]
@@ -442,15 +443,15 @@
     sort_by = x
     variable = T
     start_point = '0 -1200 0'
-    end_point = '1000 -1200 0'
+    end_point = '500 -1200 0'
     num_points = 25
   []
   [./temperature300m]
     type = LineValueSampler
     sort_by = x
     variable = T
-    start_point = '0 -00 0'
-    end_point = '1000 -600 0'
+    start_point = '0 -600 0'
+    end_point = '500 -600 0'
     num_points = 25
   []
 []

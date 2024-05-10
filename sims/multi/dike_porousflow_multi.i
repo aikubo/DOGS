@@ -56,7 +56,7 @@
     []
     [fs]
       type = PorousFlowWaterVapor
-      water_fp = watertab
+      water_fp = water_tab
       capillary_pressure = pc
     []
   []
@@ -208,7 +208,7 @@
       property = enthalpy
       temperature_unit = Kelvin
       porepressure = pliquid
-      fp = water97
+      fp = water97 #_tab
     []
 
   []
@@ -292,7 +292,9 @@
       fp = water97
       fluid_properties_file = 'water_extended.csv'
       error_on_out_of_bounds = false
+      p_h_variables = true
     []
+
   []
 
   [Materials]
