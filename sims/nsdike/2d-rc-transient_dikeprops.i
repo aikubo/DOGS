@@ -1,15 +1,69 @@
+# 2D transient flow in a rectangular channel with a solid wall
+# slowling incrementing to dike conditions
+# 1. increase domain
+# 2. bottom inlet
+# 3. increase mu and rho by 10x
+# 4. increase to dike values
+# works pretty well, converges but has to cut tstep occasionally
+# 5. add melt fraction aux
+# increase temp to 1200
+# increasing the temp to 1200 causes the dv/dx velocity gradient to go to zero
+# increase h_fs accordingly to get velocity drop at edges
+# since it doesn't run for long and is very hot the T drop is very low > 1 deg
+# but it's working :D
+# 6. add buoyancy
+# needs alpha_b functor material
+# takes longer to converge and adds funky velocity field
+# maybe due to pressure gradient + temp gradient
+# taking out for now
+# [v_buoyancy]
+#   type = INSFVMomentumBoussinesq
+#   variable = vel_y
+#   T_fluid = T]
+#   gravity = '0 -9.81 0'
+#   rho = ''rho_mixture''
+#   ref_temperature = ${T_cold}
+#   momentum_component = 'y'
+# []
+# [v_gravity]
+#   type = INSFVMomentumGravity
+#   variable = vel_y
+#   gravity = '0 -9.81 0'
+#   rho = ''rho_mixture''
+#   momentum_component = 'y'
+# []
+# 7. add phase change based on gallium solidification
+# put dt as 0.2
+# it runs!! but slowly
+
+
+
+
 # Fluid properties
-mu = 1.1
-rho = 1.1
-cp = 1.1
-k = 1e-3
+mu = 100
 
 # Operating conditions
 y_inlet = 1
-T_inlet = 200
-T_solid = 190
+T_inlet = 1170
+T_cold = 190
 p_outlet = 10
-h_fs = 0.01
+h_fs = 10000
+alpha_b = 1
+
+# Phase change properties
+L = 300000
+T_liquidus = 1165
+T_solidus = 1015
+
+#Solid Properties
+cp_solid = 1100
+k_solid = 4
+rho_solid = 2800
+
+#Liquid Properties
+cp_liquid = 1100
+k_liquid = 4
+rho_liquid = 3000
 
 # Numerical scheme
 advected_interp_method = 'average'
@@ -53,7 +107,7 @@ velocity_interp_method = 'rc'
   [pressure]
     type = INSFVPressureVariable
   []
-  [T_fluid]
+  [T]
     type = INSFVEnergyVariable
     initial_condition = ${T_inlet}
   []
@@ -65,12 +119,12 @@ velocity_interp_method = 'rc'
     variable = pressure
     advected_interp_method = ${advected_interp_method}
     velocity_interp_method = ${velocity_interp_method}
-    rho = ${rho}
+    rho = rho_mixture
   []
   [u_time]
     type = INSFVMomentumTimeDerivative
     variable = vel_x
-    rho = ${rho}
+    rho = rho_mixture
     momentum_component = 'x'
   []
   [u_advection]
@@ -78,7 +132,7 @@ velocity_interp_method = 'rc'
     variable = vel_x
     advected_interp_method = ${advected_interp_method}
     velocity_interp_method = ${velocity_interp_method}
-    rho = ${rho}
+    rho = rho_mixture
     momentum_component = 'x'
   []
   [u_viscosity]
@@ -93,11 +147,34 @@ velocity_interp_method = 'rc'
     momentum_component = 'x'
     pressure = pressure
   []
+  [u_friction]
+    type = INSFVMomentumFriction
+    variable = vel_x
+    momentum_component = 'x'
+    linear_coef_name = 'Darcy_coefficient'
+    quadratic_coef_name = 'Forchheimer_coefficient'
+  []
+  [u_buoyancy]
+    type = INSFVMomentumBoussinesq
+    variable = vel_x
+    T_fluid = T
+    gravity = '0 -9.81 0'
+    rho = '${rho_liquid}'
+    ref_temperature = ${T_cold}
+    momentum_component = 'x'
+  []
+  [u_gravity]
+    type = INSFVMomentumGravity
+    variable = vel_x
+    gravity = '0 -9.81 0'
+    rho = '${rho_liquid}'
+    momentum_component = 'x'
+  []
 
   [v_time]
     type = INSFVMomentumTimeDerivative
     variable = vel_y
-    rho = ${rho}
+    rho = rho_mixture
     momentum_component = 'y'
   []
   [v_advection]
@@ -105,7 +182,7 @@ velocity_interp_method = 'rc'
     variable = vel_y
     advected_interp_method = ${advected_interp_method}
     velocity_interp_method = ${velocity_interp_method}
-    rho = ${rho}
+    rho = rho_mixture
     momentum_component = 'y'
   []
   [v_viscosity]
@@ -120,30 +197,62 @@ velocity_interp_method = 'rc'
     momentum_component = 'y'
     pressure = pressure
   []
+  [v_friction]
+    type = INSFVMomentumFriction
+    variable = vel_y
+    momentum_component = 'y'
+    linear_coef_name = 'Darcy_coefficient'
+    quadratic_coef_name = 'Forchheimer_coefficient'
+  []
+  [v_buoyancy]
+    type = INSFVMomentumBoussinesq
+    variable = vel_y
+    T_fluid = T
+    gravity = '0 -9.81 0'
+    rho = '${rho_liquid}'
+    ref_temperature = ${T_cold}
+    momentum_component = 'y'
+  []
+  [v_gravity]
+    type = INSFVMomentumGravity
+    variable = vel_y
+    gravity = '0 -9.81 0'
+    rho = '${rho_liquid}'
+    momentum_component = 'y'
+  []
 
-  [energy_time]
+  [T_time]
     type = INSFVEnergyTimeDerivative
-    variable = T_fluid
-    rho = ${rho}
+    variable = T
+    rho = rho_mixture
     dh_dt = dh_dt
   []
   [energy_advection]
     type = INSFVEnergyAdvection
-    variable = T_fluid
+    variable = T
     velocity_interp_method = ${velocity_interp_method}
     advected_interp_method = ${advected_interp_method}
   []
   [energy_diffusion]
     type = FVDiffusion
-    variable = T_fluid
-    coeff = ${k}
+    coeff = k_mixture
+    variable = T
+  []
+  [energy_source]
+    type = NSFVPhaseChangeSource
+    variable = T
+    L = ${L}
+    liquid_fraction = 'meltFraction'
+    T_liquidus = ${T_liquidus}
+    T_solidus = ${T_solidus}
+    rho = 'rho_mixture'
   []
   [energy_convection]
     type = PINSFVEnergyAmbientConvection
-    variable = T_fluid
+    variable = T
     is_solid = false
-    T_fluid = 'T_fluid'
-    T_solid = 'T_solid'
+    T_fluid = 'T'
+    T_solid = 'T_cold'
     h_solid_fluid = 'h_cv'
   []
 []
@@ -163,8 +272,8 @@ velocity_interp_method = 'rc'
   []
   [inlet-T]
     type = FVNeumannBC
-    variable = T_fluid
-    value = '${fparse y_inlet * rho * cp * T_inlet}'
+    variable = T
+    value = '${fparse y_inlet * rho_liquid * cp_liquid * T_inlet}'
     boundary = 'bottom'
   []
 
@@ -212,7 +321,7 @@ velocity_interp_method = 'rc'
     v = vel_y
     boundary = 'top'
     momentum_component = 'x'
-    rho = ${rho}
+    rho = 'rho_mixture'
   []
   [outlet_v]
     type = INSFVMomentumAdvectionOutflowBC
@@ -221,7 +330,7 @@ velocity_interp_method = 'rc'
     v = vel_y
     boundary = 'top'
     momentum_component = 'y'
-    rho = ${rho}
+    rho = 'rho_mixture'
   []
   [outlet_p]
     type = INSFVOutletPressureBC
@@ -229,23 +338,108 @@ velocity_interp_method = 'rc'
     variable = pressure
     function = '${p_outlet}'
   []
+
+
 []
+
+[AuxVariables]
+  [meltFraction]
+    type = MooseVariableFVReal
+  []
+  [U]
+    type = MooseVariableFVReal
+  []
+  [density]
+    type = MooseVariableFVReal
+  []
+  [th_cond]
+    type = MooseVariableFVReal
+  []
+  [cp_var]
+    type = MooseVariableFVReal
+  []
+  [darcy_coef]
+    type = MooseVariableFVReal
+  []
+  [fch_coef]
+    type = MooseVariableFVReal
+  []
+[]
+
+[AuxKernels]
+  [meltFraction]
+    type = ParsedAux
+    variable = meltFraction
+    coupled_variables = T
+    constant_names = 'Solidus Liquidus bd'
+    constant_expressions = '1015 1165 1.7'
+    expression = 'if(T < Solidus, 0, if(T > Liquidus, 1, ((T - Solidus) / (Liquidus - Solidus))^bd))'
+  []
+  [mag]
+    type = VectorMagnitudeAux
+    variable = U
+    x = vel_x
+    y = vel_y
+  []
+  [rho_out]
+    type = FunctorAux
+    functor = 'rho_mixture'
+    variable = 'density'
+  []
+  [th_cond_out]
+    type = FunctorAux
+    functor = 'k_mixture'
+    variable = 'th_cond'
+  []
+  [cp_out]
+    type = FunctorAux
+    functor = 'cp_mixture'
+    variable = 'cp_var'
+  []
+  [darcy_out]
+    type = FunctorAux
+    functor = 'Darcy_coefficient'
+    variable = 'darcy_coef'
+  []
+  [fch_out]
+    type = FunctorAux
+    functor = 'Forchheimer_coefficient'
+    variable = 'fch_coef'
+  []
+[]
+
+
 
 [FunctorMaterials]
   [constants]
     type = ADGenericFunctorMaterial
-    prop_names = 'h_cv T_solid'
-    prop_values = '${h_fs} ${T_solid}'
-  []
-  [functor_constants]
-    type = ADGenericFunctorMaterial
-    prop_names = 'cp'
-    prop_values = '${cp}'
+    prop_names = 'h_cv T_cold'
+    prop_values = '${h_fs} ${T_cold}'
   []
   [ins_fv]
-    type = INSFVEnthalpyFunctorMaterial
-    rho = ${rho}
-    temperature = 'T_fluid'
+    type = INSFVEnthalpyMaterial
+    rho = 'rho_mixture'
+    cp = 'cp_mixture'
+    temperature = 'T'
+  []
+  [eff_cp]
+    type = NSFVMixtureFunctorMaterial
+    phase_2_names = '${cp_solid} ${k_solid} ${rho_solid}'
+    phase_1_names = '${cp_liquid} ${k_liquid} ${rho_liquid}'
+    prop_names = 'cp_mixture k_mixture rho_mixture'
+    phase_1_fraction = 'meltFraction'
+  []
+  [mushy_zone_resistance]
+    type = INSFVMushyPorousFrictionFunctorMaterial
+    liquid_fraction = 'meltFraction'
+    mu = '${mu}'
+    rho_l = '${rho_liquid}'
+    dendrite_spacing_scaling = 1e-1
+  []
+  [const_functor]
+    type = ADGenericFunctorMaterial
+    prop_names = 'alpha_b'
+    prop_values = '${alpha_b}'
   []
 []
 
@@ -255,9 +449,8 @@ velocity_interp_method = 'rc'
   petsc_options_iname = '-pc_type -pc_factor_shift_type'
   petsc_options_value = 'lu NONZERO'
   line_search = 'none'
-  #nl_rel_tol =
-  dt = 0.4
   end_time = 4
+  dt = 0.02
 []
 
 [Outputs]
