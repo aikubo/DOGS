@@ -33,6 +33,11 @@ velocity_interp_method = 'rc'
     nx = 20
     ny = 50
   []
+  [rename]
+    type = RenameBoundaryGenerator
+    old_boundary = "top left"
+    new_boundary = "host_edge host_edge"
+  []
 []
 
 [GlobalParams]
@@ -241,6 +246,8 @@ velocity_interp_method = 'rc'
   [Tfluid]
     type = MooseVariableFVReal
   []
+  [h_parent]
+  []
 []
 
 [AuxKernels]
@@ -289,4 +296,11 @@ velocity_interp_method = 'rc'
 [Outputs]
   exodus = true
   csv = true
+[]
+
+[Postprocessors]
+  [./h_avg]
+    type = ElementAverageValue
+    variable = h_parent
+  []
 []
