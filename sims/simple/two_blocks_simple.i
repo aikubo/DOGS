@@ -29,6 +29,14 @@
 
 # lowering perm to 10e-12 gives nice plume
 
+# seems to work a bit better with
+# 1. sidesetsaroundsubdomaingenerator rather than parsed
+# 2. CoupledNeumannBC
+# 3. MatchedValueBC
+# 4. removed the block restriction from variables but not kernals
+# lots of linear solves
+# extending variables using dummy kernals helps convergence it seems
+
 [Mesh]
   [gen]
     type = GeneratedMeshGenerator
@@ -36,7 +44,7 @@
     nx = 40
     ny = 20
     xmin = 0
-    xmax = 500
+    xmax = 5000
     ymax = -200
     ymin = -1500
     bias_x = 1.20
@@ -101,6 +109,13 @@
     old_boundary = 'dike_edge_R dike_edge_top'
     new_boundary = 'dike_edge dike_edge'
   []
+  [SideSetsBetweenSubdomainsGenerator]
+    type = SideSetsBetweenSubdomainsGenerator
+    input = sidesets6
+    primary_block= 'host'
+    paired_block = 'dike'
+    new_boundary = 'host_edge'
+  []
 []
 
 [GlobalParams]
@@ -119,16 +134,12 @@
 
 [Variables]
   [porepressure]
-    scaling = 1e2
-    block = 'host'
+
   []
   [T]
-    scaling = 1e-5
-    block = 'host'
+   # scaling = 1e-5
   []
   [Tdike]
-    scaling = 1e-2
-    block = 'dike'
   []
 []
 
@@ -149,26 +160,6 @@
     family = MONOMIAL
     order = CONSTANT
   []
-  [advectiveFlux]
-    family = MONOMIAL
-    order = CONSTANT
-  []
-  [diffusiveFlux]
-    family = MONOMIAL
-    order = CONSTANT
-  []
-  [GradT]
-    family = MONOMIAL
-    order = CONSTANT
-  []
-  [nu]
-    family = MONOMIAL
-    order = CONSTANT
-  []
-  [eff_k]
-    family = MONOMIAL
-    order = CONSTANT
-  []
   [porosity]
     family = MONOMIAL
     order = CONSTANT
@@ -185,7 +176,23 @@
     family = MONOMIAL
     order = CONSTANT
   []
+  [pflow_heatflux]
+    family = MONOMIAL
+    order = CONSTANT
   []
+  [GradT]
+    family = MONOMIAL
+    order = CONSTANT
+  []
+  [GradT_dike]
+    family = MONOMIAL
+    order = CONSTANT
+  []
+  [diffT]
+    family = MONOMIAL
+    order = CONSTANT
+  []
+[]
 
 [AuxKernels]
   [hydrostat]
@@ -203,13 +210,13 @@
     type = PorousFlowPropertyAux
     variable = porosity
     property = porosity
-    block = 'host'
+
   []
   [density]
     type = PorousFlowPropertyAux
     variable = density
     property = density
-    block = 'host'
+
   []
   [darcy_vel_x_kernel]
     type = PorousFlowDarcyVelocityComponent
@@ -217,7 +224,7 @@
     variable = water_darcy_vel_x
     fluid_phase = 0
     execute_on = 'initial timestep_end'
-    block = 'host'
+
   []
   [darcy_vel_y_kernel]
     type = PorousFlowDarcyVelocityComponent
@@ -225,64 +232,49 @@
     variable = water_darcy_vel_y
     fluid_phase = 0
     execute_on = 'initial timestep_end'
-    block = 'host'
+
   []
   [enthalpy_water]
     type = PorousFlowPropertyAux
     variable = enthalpy
     property = enthalpy
     execute_on = 'initial timestep_end'
-    block = 'host'
+
   []
-  [advectiveFlux]
-    type = AdvectiveFluxAux
-    variable = advectiveFlux
-    vel_x = water_darcy_vel_x
-    vel_y = water_darcy_vel_y
-    advected_variable = T
-    component = x
-    boundary = dike2
-    check_boundary_restricted = false
-  []
-  [diffusiveFlux]
-    type = DiffusionFluxAux
-    variable = diffusiveFlux
-    component = x
-    diffusion_variable = T
-    diffusivity = 'diff'
-    boundary = dike2
-    check_boundary_restricted = false
-  []
-  [GradT]
+  [GradT_dike]
     type = VariableGradientComponent
-    variable = GradT
+    variable = GradT_dike
     component = x
-    gradient_variable = T
-    block = 'host'
-  []
-  [eff_k]
-    type = ParsedAux
-    variable = eff_k
-    coupled_variables = 'diffusiveFlux advectiveFlux GradT'
-    expression='(diffusiveFlux+advectiveFlux)/(GradT+0.0001)'
-    block = 'host'
-  []
-  [nu]
-    type = ParsedAux
-    variable = nu
-    coupled_variables = 'diffusiveFlux advectiveFlux '
-    expression ='advectiveFlux/(diffusiveFlux+0.0001)'
-    block = 'host'
+    gradient_variable = Tdike
   []
   [perm]
     type = ParsedAux
     variable = perm
     coupled_variables = 'T'
     constant_names= 'k0 klow'
-    constant_expressions = '10e-13 10e-19'
+    constant_expressions = '10e-13 10e-16'
     expression = 'if(T>573,klow,k0)'
-    block = 'host'
+
     execute_on = 'initial nonlinear timestep_end'
+  []
+  [pflow_heatflux]
+    type = PorousFlowHeatFluxAux
+    variable = pflow_heatflux
+  []
+  [gradT]
+    type = VariableGradientComponent
+    variable = GradT
+    component = x
+    gradient_variable = T
+  []
+  [diffT]
+    type = DiffusionFluxAux
+    diffusivity = thermal_conductivity_dike
+    variable = diffT
+    component = normal
+    diffusion_variable = Tdike
+    boundary = 'dike_edge host_edge'
+    check_boundary_restricted = false
   []
 
 []
@@ -292,26 +284,32 @@
     type = FunctionIC
     variable = porepressure
     function = ppfunc
-    block = 'host'
+    #block = 'host'
   []
   [geothermal]
     type = FunctionIC
     variable = T
     function = tfunc
-    block = 'host'
+    #block = 'host'
   []
   [porosity]
     type = RandomIC
     variable = porosity
     min = 0.1
     max = 0.3
-    block = 'host'
+    #block = 'host'
   []
   [dike_temperature]
     type = ConstantIC
     variable = Tdike
-    value = 583
+    value = 785
     block = 'dike'
+  []
+  [dike_host_temp]
+    type = ConstantIC
+    variable = Tdike
+    value = 285
+    block = 'host'
   []
 []
 
@@ -327,7 +325,7 @@
 [Functions]
   [dike_cooling]
       type = ParsedFunction
-      expression = '515*(1-exp(-t/5000))+(285+(-y)*10/1000)'
+      expression = '785'
     []
   [ppfunc]
     type = ParsedFunction
@@ -378,32 +376,49 @@
     block = 'dike'
     diffusion_coefficient = thermal_conductivity_dike
   []
+
+  [dummykernal]
+    type = Diffusion
+    variable = Tdike
+    block = 'host'
+  []
+  [dummykernalhost]
+    type = Diffusion
+    variable = T
+    block = 'dike'
+  []
+  [dummyPP]
+    type = Diffusion
+    variable = porepressure
+    block = 'dike'
+  []
+
 []
 
 [Materials]
   [./PorousFlowActionBase_Temperature_qp]
     type = PorousFlowTemperature
-    block = 'host'
+
     temperature = T
   [../]
   [./PorousFlowActionBase_Temperature]
     type = PorousFlowTemperature
-    block = 'host'
+
     at_nodes = true
     temperature = T
   [../]
   [./PorousFlowActionBase_MassFraction_qp]
     type = PorousFlowMassFraction
-    block = 'host'
+
   [../]
   [./PorousFlowActionBase_MassFraction]
     type = PorousFlowMassFraction
-    block = 'host'
+
     at_nodes = true
   [../]
   [./PorousFlowActionBase_FluidProperties_qp]
     type = PorousFlowSingleComponentFluid
-    block = 'host'
+
     compute_enthalpy = true
     compute_internal_energy = true
     fp = water
@@ -411,67 +426,60 @@
   [../]
   [./PorousFlowActionBase_FluidProperties]
     type = PorousFlowSingleComponentFluid
-    block = 'host'
+
     at_nodes = true
     fp = water
     phase = 0
   [../]
   [./PorousFlowUnsaturated_EffectiveFluidPressure_qp]
     type = PorousFlowEffectiveFluidPressure
-    block = 'host'
+
   [../]
   [./PorousFlowUnsaturated_EffectiveFluidPressure]
     type = PorousFlowEffectiveFluidPressure
-    block = 'host'
+
     at_nodes = true
   [../]
   [./PorousFlowFullySaturated_1PhaseP_qp]
     type = PorousFlow1PhaseFullySaturated
-    block = 'host'
+
     porepressure = porepressure
   [../]
   [./PorousFlowFullySaturated_1PhaseP]
     type = PorousFlow1PhaseFullySaturated
-    block = 'host'
+
     at_nodes = true
     porepressure = porepressure
   [../]
   [./PorousFlowActionBase_RelativePermeability_qp]
     type = PorousFlowRelativePermeabilityConst
-    block = 'host'
+
     phase = 0
   [../]
   [porosity]
     type = PorousFlowPorosityConst
     porosity = porosity
-    block = 'host'
+
   []
   [permeability]
     type = PorousFlowPermeabilityConstFromVar
     perm_xx = perm
     perm_yy = perm
     perm_zz = perm
-    block = 'host'
+
   []
   [Matrix_internal_energy]
     type = PorousFlowMatrixInternalEnergy
     density = 2400
     specific_heat_capacity = 790
-    block = 'host'
+
   []
   [thermal_conductivity]
     type = PorousFlowThermalConductivityIdeal
     dry_thermal_conductivity = '4 0 0  0 4 0  0 0 4'
-    block = 'host'
+
   []
-  [parsedMatt]
-    type = ParsedMaterial
-    property_name = diff
-    constant_names = 'kr kw'
-    constant_expressions= '4 0.6'
-    coupled_variables = 'porosity density'
-    expression = '(porosity*kw+(1-porosity)*kr)*density'
-  []
+
   [materials_host]
     type = GenericConstantMaterial
     prop_names = 'thermal_conductivity_dike specific_heat_dike density_dike'
@@ -481,22 +489,22 @@
 []
 
 [BCs]
-  [t_dike_dirichlet]
-    type = FunctionDirichletBC
-    variable = Tdike
-    function = dike_cooling
-    boundary = 'dike_center'
-  []
   [t_dike_neumann]
     type = NeumannBC
     variable = Tdike
     boundary = 'dike_center'
     value = 0
   []
+  [t_right_dike]
+    type = CoupledVarNeumannBC
+    variable = Tdike
+    boundary = 'host_edge'
+    v = pflow_heatflux
+  []
   [matched]
     type = MatchedValueBC
     variable = T
-    boundary = 'dike_edge'
+    boundary = 'host_edge'
     v = Tdike
   []
   [pp_like_dirichlet]
@@ -506,7 +514,7 @@
       pt_vals = '1e-9 1e9'
       multipliers = '1e-9 1e9'
       PT_shift = hydrostat
-      flux_function = 1e-5 #1e-2 too high causes slow convergence
+      flux_function = 1e-6 #1e-2 too high causes slow convergence
       use_mobility = true
       use_relperm = true
       fluid_phase = 0
@@ -518,29 +526,8 @@
     pt_vals = '1e-9 1e9'
     multipliers = '1e-9 1e9'
     PT_shift = geotherm
-    flux_function = 1e-5 #1e-2 too high causes slow convergence
+    flux_function = 1e-6 #1e-2 too high causes slow convergence
   []
-[]
-
-
-[Controls]
-  [period0]
-      type = TimePeriod
-      disable_objects = 'BoundaryCondition::t_dike_neumann'
-      enable_objects = 'BoundaryCondition::t_dike_dirichlet'
-      start_time = '0'
-      end_time = '63072000'
-      execute_on = 'initial timestep_begin'
-    []
-
-    [period2]
-      type = TimePeriod
-      disable_objects = 'BoundaryCondition::t_dike_dirichlet'
-      enable_objects = 'BoundaryCondition::t_dike_neumann'
-      start_time = '63072000'
-      end_time = '1.5e10'
-      execute_on = 'initial timestep_begin'
-    []
 []
 
 [Preconditioning]
@@ -557,20 +544,28 @@
     petsc_options_iname = '-pc_type'
     petsc_options_value = 'svd'
   []
+  [andy]
+    type = SMP # less linear iterations but more non lincear ones
+    full = true
+    petsc_options = '-snes_converged_reason'
+    petsc_options_iname = '-ksp_type -pc_type -sub_pc_type -snes_max_it -sub_pc_factor_shift_type '
+    petsc_options_value = 'gmres asm lu 100 NONZERO '
+  []
 []
 
 [Executioner]
   type = Transient
-  solve_type = PJFNK
+  #newton plus mumps seems faster but more timestep cuts
+  solve_type = NEWTON # MUCH better than PJFNK
+  automatic_scaling = true
   end_time = 1.5e9
   dtmax = 1e8
   line_search = none
-  automatic_scaling = true
   nl_abs_tol = 1e-6
   dtmin = 1
   [TimeStepper]
     type = IterationAdaptiveDT
-    dt = 2000
+    dt = 10000
   []
   [Adaptivity]
     interval = 1
@@ -589,8 +584,79 @@
     type = Exodus
     file_base = './visuals/two_block_simple'
     min_simulation_time_interval = 10000
-    sequence = true
+
   [../]
+  [csv]
+    type = CSV
+    file_base = ./visuals/two_block_simple
+  []
+[]
+[Postprocessors]
+  [T_host_avg]
+    type = ElementAverageValue
+    variable = 'T'
+    block = 'host'
+  []
+  [pflow_heatflux_avg]
+    type = ElementAverageValue
+    variable = pflow_heatflux
+    block = 'host'
+  []
+  [pflow_heatflux_max]
+    type = ElementExtremeValue
+    variable = pflow_heatflux
+    block = 'host'
+  []
+  [pflow_bc]
+    type = SideAverageValue
+    variable = pflow_heatflux
+    boundary = 'host_edge'
+  []
+  [pflow_bc2]
+    type = SideAverageValue  #pflow_heatflux not defined on dike_edge
+    variable = pflow_heatflux
+    boundary = 'dike_edge'
+  []
+  [flowx_bc]
+    type = SideAverageValue
+    variable = water_darcy_vel_x
+    boundary = 'host_edge'
+  []
+  [flowy_bc]
+    type = SideAverageValue
+    variable = water_darcy_vel_y
+    boundary = 'host_edge'
+  []
+  [enthalpy_bc]
+    type = SideAverageValue
+    variable = enthalpy
+    boundary = 'host_edge'
+  []
+  [gradT_bc]
+    type = SideAverageValue
+    variable = GradT
+    boundary = 'host_edge'
+  []
+  [gradT_dike_bc]
+    type = SideAverageValue
+    variable = GradT_dike
+    boundary = 'dike_edge'
+  []
+  [diffT_bc]
+    type = SideAverageValue
+    variable = diffT
+    boundary = 'dike_edge'
+  []
+  [diffT_bc2]
+    type = SideAverageValue
+    variable = diffT
+    boundary = 'host_edge'
+  []
+  [Tdike_avg]
+    type = ElementAverageValue
+    variable = 'Tdike'
+    block = 'dike'
+  []
 []
 
 [VectorPostprocessors]

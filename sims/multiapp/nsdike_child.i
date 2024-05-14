@@ -5,17 +5,17 @@
 
 
 # Fluid properties
-mu = 100
-rho = 3000
-k = 4
-cp = 1100
+mu = 10
+rho = 300
+k = 1
+cp = 1 #1100
 
 # Operating conditions
 y_inlet = 1
 T_inlet = 1170
 T_cold = 190
 p_outlet = 10
-h_fs = 10000
+hs = 10
 
 
 # Numerical scheme
@@ -32,11 +32,6 @@ velocity_interp_method = 'rc'
     ymax = 10
     nx = 20
     ny = 50
-  []
-  [rename]
-    type = RenameBoundaryGenerator
-    old_boundary = "top left"
-    new_boundary = "host_edge host_edge"
   []
 []
 
@@ -236,6 +231,14 @@ velocity_interp_method = 'rc'
     function = '${p_outlet}'
   []
 
+  [CoolingSideBC]
+    type = FVFunctorNeumannBC
+    variable = T
+    functor = -100
+    boundary = 'top right'
+  []
+
+
 
 []
 
@@ -272,7 +275,7 @@ velocity_interp_method = 'rc'
   [constants]
     type = ADGenericFunctorMaterial
     prop_names = 'h_cv T_cold'
-    prop_values = '${h_fs} ${T_cold}'
+    prop_values = '${hs} ${T_cold}'
   []
   [ins_fv]
     type = INSFVEnthalpyFunctorMaterial
@@ -290,7 +293,10 @@ velocity_interp_method = 'rc'
   petsc_options_value = 'lu NONZERO'
   line_search = 'none'
   end_time = 4
-  dt = 0.02
+  [TimeStepper]
+    type = IterationAdaptiveDT
+    dt = 0.2
+  []
 []
 
 [Outputs]
