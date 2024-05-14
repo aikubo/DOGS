@@ -48,7 +48,8 @@ protected:
   const GenericMaterialProperty<std::vector<RealGradient>, is_ad> & _grad_p;
 
   /// Gradient of the temperature in each phase
-  const GenericMaterialProperty<std::vector<RealGradient>, is_ad> & _grad_T;
+
+  const MaterialProperty<RealGradient> & _grad_T;
 
   /// Enthalpy of each phase
   const GenericMaterialProperty<std::vector<Real>, is_ad> & _enthalpy;

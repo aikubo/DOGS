@@ -24,7 +24,9 @@ PorousFlowHeatFluxAuxTempl<is_ad>::validParams()
   params.addParam<unsigned int>("fluid_phase", 0, "The index corresponding to the fluid phase");
   MooseEnum component("x=0 y=1 z=2");
 
-  params.addClassDescription("Caluculates the heat flux in porous media using the Darcy velocity");
+  params.addClassDescription(
+      "Caluculates the heat flux in porous media using the Darcy velocity with units of W/m"
+      "then multipy by -1, so it is the heat flux out of the porous media");
   return params;
 }
 
@@ -42,7 +44,7 @@ PorousFlowHeatFluxAuxTempl<is_ad>::PorousFlowHeatFluxAuxTempl(const InputParamet
         getGenericMaterialProperty<std::vector<Real>, is_ad>("PorousFlow_fluid_phase_density_qp")),
     _enthalpy(
         getGenericMaterialProperty<std::vector<Real>, is_ad>("PorousFlow_fluid_phase_enthalpy_qp")),
-    _grad_t(getMaterialProperty<RealGradient>("PorousFlow_grad_temperature_qp")),
+    _grad_T(getMaterialProperty<RealGradient>("PorousFlow_grad_temperature_qp")),
     _conductivity(
         getGenericMaterialProperty<RealTensorValue, is_ad>("PorousFlow_thermal_conductivity_qp")),
     _dictator(getUserObject<PorousFlowDictator>("PorousFlowDictator")),
@@ -74,10 +76,12 @@ PorousFlowHeatFluxAuxTempl<is_ad>::computeValue()
 {
   Real velocity_magnitude = computeVelocity();
 
-  Real heat_flux_conductive = MetaPhysicL::raw_value(_conductivity[_qp] * _grad_T[_qp][_ph]).norm();
-  Real heat_flux_advective = MetaPhysicL::raw_value(_enthalpy[_qp][_ph]) * velocity_magnitude;
+  Real heat_flux_conductive = MetaPhysicL::raw_value(_conductivity[_qp] * _grad_T[_qp]).norm();
+  Real heat_flux_advective =
+      MetaPhysicL::raw_value(_enthalpy[_qp][_ph] * _fluid_density_qp[_qp][_ph]) *
+      velocity_magnitude;
 
-  return heat_flux_conductive + heat_flux_advective;
+  return -1 * (-1 * heat_flux_conductive + heat_flux_advective);
 }
 
 template class PorousFlowHeatFluxAuxTempl<false>;
