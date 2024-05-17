@@ -35,6 +35,7 @@
 # 7. add phase change based on gallium solidification
 # put dt as 0.2
 # it runs!! but slowly
+# might be time to move to hpc
 
 
 

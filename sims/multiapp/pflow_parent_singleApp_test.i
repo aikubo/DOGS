@@ -6,7 +6,6 @@
 # i increased the bbox_factor to 1.2 and the child app to be slightly wider
 # and slightly taller than the deleted block in the parent app
 
-NOT WORKING
 
 
 [Mesh]
@@ -326,6 +325,7 @@ NOT WORKING
     variable = T_host
     block = 'host'
   []
+
   [diff]
     type = HeatConduction
     variable = T_dike
@@ -337,32 +337,43 @@ NOT WORKING
     block = 'dike'
   []
 
+  [dummy]
+    type = Diffusion
+    variable = T_host
+    block = 'dike'
+  []
+  [dummy2]
+    type = Diffusion
+    variable = T_dike
+    block = 'host'
+  []
+
 []
 
 [Materials]
   [PorousFlowActionBase_Temperature_qp]
     type = PorousFlowTemperature
-    block = 'host'
+
     temperature = 'T_host'
   []
   [PorousFlowActionBase_Temperature]
     type = PorousFlowTemperature
-    block = 'host'
+
     at_nodes = true
     temperature = 'T_host'
   []
   [PorousFlowActionBase_MassFraction_qp]
     type = PorousFlowMassFraction
-    block = 'host'
+
   []
   [PorousFlowActionBase_MassFraction]
     type = PorousFlowMassFraction
-    block = 'host'
+
     at_nodes = true
   []
   [PorousFlowActionBase_FluidProperties_qp]
     type = PorousFlowSingleComponentFluid
-    block = 'host'
+
     compute_enthalpy = true
     compute_internal_energy = true
     fp = water
@@ -370,64 +381,64 @@ NOT WORKING
   []
   [PorousFlowActionBase_FluidProperties]
     type = PorousFlowSingleComponentFluid
-    block = 'host'
+
     at_nodes = true
     fp = water
     phase = 0
   []
   [PorousFlowUnsaturated_EffectiveFluidPressure_qp]
     type = PorousFlowEffectiveFluidPressure
-    block = 'host'
+
   []
   [PorousFlowUnsaturated_EffectiveFluidPressure]
     type = PorousFlowEffectiveFluidPressure
-    block = 'host'
+
     at_nodes = true
   []
   [PorousFlowFullySaturated_1PhaseP_qp]
     type = PorousFlow1PhaseFullySaturated
-    block = 'host'
+
     porepressure = 'porepressure'
   []
   [PorousFlowFullySaturated_1PhaseP]
     type = PorousFlow1PhaseFullySaturated
-    block = 'host'
+
     at_nodes = true
     porepressure = 'porepressure'
   []
   [PorousFlowActionBase_RelativePermeability_qp]
     type = PorousFlowRelativePermeabilityConst
-    block = 'host'
+
     phase = 0
   []
   [porosity]
     type = PorousFlowPorosityConst
     porosity = 'porosity'
-    block = 'host'
+
   []
   [permeability]
     type = PorousFlowPermeabilityConstFromVar
     perm_xx = 'perm'
     perm_yy = 'perm'
     perm_zz = 'perm'
-    block = 'host'
+
   []
   [Matrix_internal_energy]
     type = PorousFlowMatrixInternalEnergy
     density = 2400
     specific_heat_capacity = 790
-    block = 'host'
+
   []
   [thermal_conductivity]
     type = PorousFlowThermalConductivityIdeal
     dry_thermal_conductivity = '4 0 0  0 4 0  0 0 4'
-    block = 'host'
+
   []
   [dike_mat]
     type = GenericConstantMaterial
     prop_names = 'thermal_conductivity density specific_heat'
     prop_values = '4 3000 1100'
-    block = 'dike'
+
   []
 []
 
@@ -438,27 +449,27 @@ NOT WORKING
     boundary = 'dike_edge'
     v = 'T_dike'
   []
-  [flux]
-    # type = PostprocessorNeumannBC
-    # variable = T_dike
-    # boundary = 'dike_edge'
-    # postprocessor = pflow_bc
-    type = NeumannBC
-    variable = T_dike
-    boundary = 'dike_edge'
-    value = -10
-  []
-  [T_dike]
-    type = DirichletBC
-    variable = T_dike
-    boundary = 'dike_center'
-    value = 500
-  []
+  # [flux]
+  #   # type = PostprocessorNeumannBC
+  #   # variable = T_dike
+  #   # boundary = 'dike_edge'
+  #   # postprocessor = pflow_bc
+  #   type = NeumannBC
+  #   variable = T_dike
+  #   boundary = 'dike_edge'
+  #   value = -10
+  # []
+  # [T_dike]
+  #   type = DirichletBC
+  #   variable = T_dike
+  #   boundary = 'dike_center'
+  #   value = 500
+  # []
   [pp_dike]
     type = NeumannBC
     variable = porepressure
     boundary = 'dike_edge'
-    value = 0
+    value = 10
   []
   [pp_like_dirichlet]
     type = PorousFlowPiecewiseLinearSink

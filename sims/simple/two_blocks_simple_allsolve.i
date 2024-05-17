@@ -45,16 +45,16 @@
     ny = 20
     xmin = 0
     xmax = 1000
-    ymax = -1500
-    ymin = -3000
-    bias_x = 1.25
+    ymax = 1500
+    ymin = -0
+    #bias_x = 1.25
   []
   [dike]
     type = SubdomainBoundingBoxGenerator
     input = gen
     block_id = 1
-    bottom_left = ' 50 -1800 0'
-    top_right = ' 0 -3000 0'
+    bottom_left = ' 0 0 0'
+    top_right = ' 50 1200 0'
   []
   [rename]
     type = RenameBlockGenerator
@@ -184,6 +184,7 @@
     family = MONOMIAL
     order = CONSTANT
   []
+
 []
 
 [AuxKernels]
@@ -238,8 +239,8 @@
     variable = perm
     coupled_variables = 'T'
     constant_names= 'k0 klow'
-    constant_expressions = '10e-15 10e-16'
-    expression = 'if(T>1000,klow,k0)'
+    constant_expressions = '10e-13 10e-25'
+    expression = 'if(T>800,klow,k0)'
     execute_on = 'initial nonlinear timestep_end'
   []
   [pflow_heatflux]
@@ -254,14 +255,13 @@
   []
   [diffT]
     type = DiffusionFluxAux
-    diffusivity = thermal_conductivity_dike
+    diffusivity = dike_thermal_conductivity
     variable = diffT
     component = normal
     diffusion_variable = T
     boundary = 'dike_edge host_edge'
     check_boundary_restricted = false
   []
-
 []
 
 [ICs]
@@ -269,14 +269,14 @@
     type = FunctionIC
     variable = porepressure
     function = ppfunc
-    block = 'host'
+   # block = 'host'
   []
-  [dike_pp]
-    type = FunctionIC
-    variable = porepressure
-    function = dike_pressure
-    block = 'dike'
-  []
+  # [dike_pp]
+  #   type = FunctionIC
+  #   variable = porepressure
+  #   function = dike_pressure
+  #   block = 'dike'
+  # []
   [geothermal]
     type = FunctionIC
     variable = T
@@ -284,11 +284,14 @@
     block = 'host'
   []
   [porosity]
-    type = RandomIC
+    type = ConstantIC
     variable = porosity
-    min = 0.1
-    max = 0.2
-    #block = 'host'
+    value = 0.2
+    # type = RandomIC
+    # variable = porosity
+    # min = 0.1
+    # max = 0.2
+    # #block = 'host'
   []
   [dike_temperature]
     type = ConstantIC
@@ -314,63 +317,44 @@
     []
   [ppfunc]
     type = ParsedFunction
-    expression = 1.0135e5-(y)*9.81*1000 #hydrostatic gradientose   + atmospheric pressure in Pa
+    expression ='1.0135e5+(1500)*9.81*1000+(1500-y)*1000*9.81' #1.0135e5-(y)*9.81*1000' #hydrostatic gradientose   + atmospheric pressure in Pa
   []
   [tfunc]
     type = ParsedFunction
-    expression = 285+(-y)*10/1000 # geothermal 10 C per kilometer in kelvin
+    expression = '300+(1500-y)*10/1000' #285+(-y)*10/1000 # geothermal 10 C per kilometer in kelvin
   []
   [dike_pressure]
     type = ParsedFunction
-    expression = 1.0135e5-(y)*9.81*1000*10 #hydrostatic gradientose   + atmospheric pressure in Pa
+    expression = '1.0135e6 + (1500-y)*1000*9.81'  #hydrostatic gradientose   + atmospheric pressure in Pa
   []
 []
 
 [Kernels]
   [./PorousFlowUnsaturated_HeatConduction]
     type = PorousFlowHeatConduction
-    block = 'host'
+    #block = 'host'
     variable = T
   [../]
   [./PorousFlowUnsaturated_EnergyTimeDerivative]
     type = PorousFlowEnergyTimeDerivative
-    block = 'host'
+    #block = 'host'
     variable = T
   [../]
   [./PorousFlowFullySaturated_AdvectiveFlux0]
     type = PorousFlowFullySaturatedAdvectiveFlux
-    block = 'host'
+    #block = 'host'
     variable = porepressure
   [../]
   [./PorousFlowFullySaturated_MassTimeDerivative0]
     type = PorousFlowMassTimeDerivative
-    block = 'host'
+    #block = 'host'
     variable = porepressure
   [../]
   [./PorousFlowFullySaturatedUpwind_HeatAdvection]
     type = PorousFlowFullySaturatedUpwindHeatAdvection
     variable = T
-    block = 'host'
+    #block = 'host'
   [../]
-  [./SpecificHeatConductionTimeDerivative]
-    type = SpecificHeatConductionTimeDerivative
-    variable = T
-    block = 'dike'
-    density = density_dike
-    specific_heat = specific_heat_dike
-  [../]
-  [./HeatCond]
-    type = HeatConduction
-    variable = T
-    block = 'dike'
-    diffusion_coefficient = thermal_conductivity_dike
-  []
-
-  [dummyPP]
-    type = Diffusion
-    variable = porepressure
-    block = 'dike'
-  []
 
 []
 
@@ -456,34 +440,18 @@
     type = PorousFlowThermalConductivityIdeal
     dry_thermal_conductivity = '3 0 0  0 3 0  0 0 3' # too high per noah W/mK
   []
-
-  [materials_host]
-    type = GenericConstantMaterial
-    prop_names = 'thermal_conductivity_dike specific_heat_dike density_dike'
-    prop_values = '3.3 1200.0 3000'
-    block = 'dike'
+  [parsed_thermal_conductivity]
+    type = ParsedMaterial
+    property_name = dike_thermal_conductivity
+    constant_names = 'kw k'
+    constant_expressions = '3 0.1'
+    coupled_variables = 'porosity'
+    expression = 'kw*porosity + k*(1-porosity)'
   []
+
 []
 
 [BCs]
-  # [t_dike_neumann]
-  #   type = NeumannBC
-  #   variable = Tdike
-  #   boundary = 'dike_center'
-  #   value = 0
-  # []
-  # [t_right_dike]
-  #   type = CoupledVarNeumannBC
-  #   variable = Tdike
-  #   boundary = 'host_edge'
-  #   v = pflow_heatflux
-  # []
-  # [matched]
-  #   type = MatchedValueBC
-  #   variable = T
-  #   boundary = 'host_edge'
-  #   v = Tdike
-  # []
   [pp_like_dirichlet]
       type = PorousFlowPiecewiseLinearSink
       variable = porepressure
@@ -508,13 +476,13 @@
   [pp_right]
     type = NeumannBC
     variable = porepressure
-    boundary = 'host_left right bottom'
+    boundary = 'left right bottom'
     value = 0
   []
   [t_bc]
     type = NeumannBC
     variable = T
-    boundary = 'host_left right bottom'
+    boundary = 'left right bottom'
     value = 0
   []
 []
@@ -545,15 +513,20 @@
 [Executioner]
   type = Transient
   #newton plus mumps seems faster but more timestep cuts
+
+  # 1e6 s is 0.03 years, 1e7 is 0.3 years
+  # 1.5e9 is 47.5 years
   solve_type = NEWTON # MUCH better than PJFNK
   automatic_scaling = true
-  end_time = 1.5e9
+  end_time = 3e9
+  dtmax= 6.312e+7
   line_search = none
-  nl_abs_tol = 1e-6
+  nl_abs_tol = 1e-9
   dtmin = 1
   [TimeStepper]
     type = IterationAdaptiveDT
-    dt = 10000
+    dt = 1e6
+
   []
   [Adaptivity]
     interval = 1
@@ -571,7 +544,7 @@
   [./out]
     type = Exodus
     file_base = './visuals/two_block_simple'
-    min_simulation_time_interval = 10000
+    min_simulation_time_interval = 6e7
 
   [../]
   [csv]
@@ -644,6 +617,10 @@
     type = ElementAverageValue
     variable = 'T'
     block = 'dike'
+  []
+  [Residual]
+    type = Residual
+
   []
 []
 
