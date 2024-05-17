@@ -47,15 +47,17 @@ protected:
   /// Gradient of the pore pressure in each phase
   const GenericMaterialProperty<std::vector<RealGradient>, is_ad> & _grad_p;
 
-  /// Gradient of the temperature in each phase
-
-  const MaterialProperty<RealGradient> & _grad_T;
+  /// Fluid density for each phase (at the qp)
+  const GenericMaterialProperty<std::vector<Real>, is_ad> & _fluid_density_qp;
 
   /// Enthalpy of each phase
   const GenericMaterialProperty<std::vector<Real>, is_ad> & _enthalpy;
 
-  /// Fluid density for each phase (at the qp)
-  const GenericMaterialProperty<std::vector<Real>, is_ad> & _fluid_density_qp;
+  /// Gradient of the temperature in each phase
+  const MaterialProperty<RealGradient> & _grad_T;
+
+  /// heat conductivity
+  const GenericMaterialProperty<RealTensorValue, is_ad> & _conductivity;
 
   /// PorousFlowDicatator UserObject
   const PorousFlowDictator & _dictator;
@@ -68,9 +70,6 @@ protected:
 
   /// Gravitational acceleration
   const RealVectorValue _gravity;
-
-  /// heat conductivity
-  const GenericMaterialProperty<RealTensorValue, is_ad> & _conductivity;
 };
 
 typedef PorousFlowHeatFluxAuxTempl<false> PorousFlowHeatFluxAux;
