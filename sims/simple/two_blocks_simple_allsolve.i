@@ -519,7 +519,7 @@
   solve_type = NEWTON # MUCH better than PJFNK
   automatic_scaling = true
   end_time = 3e9
-  dtmax= 6.312e+7
+  #dtmax= 6.312e+7
   line_search = none
   nl_abs_tol = 1e-9
   dtmin = 1
@@ -544,7 +544,7 @@
   [./out]
     type = Exodus
     file_base = './visuals/two_block_simple'
-    min_simulation_time_interval = 6e7
+    min_simulation_time_interval = 3e7
 
   [../]
   [csv]
