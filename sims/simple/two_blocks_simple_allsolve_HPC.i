@@ -267,8 +267,8 @@
     coupled_variables = 'T'
     constant_names= 'k0 klow'
     constant_expressions = '10e-13 10e-25'
-    expression = 'if(T>800,klow,k0)'
-    execute_on = 'initial nonlinear timestep_end'
+    expression = '10e-13' #'if(T>800,klow,k0)'
+    execute_on = 'initial timestep_end'
   []
   [pflow_heatflux]
     type = PorousFlowHeatFluxAux

@@ -58,6 +58,10 @@
 # NL DOF = 80800
 # try for 20k per process according to docs
 
+# trying with no perm Temp relationship
+# trying with boomeramg and mumps
+# trying with 1e-6 nl_abs_tol
+
 [Mesh]
   [gen]
     type = GeneratedMeshGenerator

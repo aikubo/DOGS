@@ -1,12 +1,12 @@
-# log linear perm relationship
-
+# doesn't work with abrupt perm change
+# trying simple log linear model
 
 [Mesh]
   [gen]
     type = GeneratedMeshGenerator
     dim = 2
-    nx = 200
-    ny = 200
+    nx = 20
+    ny = 20
     xmin = 0
     xmax = 1500
     ymax = 1500
@@ -152,7 +152,6 @@
     family = MONOMIAL
     order = CONSTANT
   []
-
 []
 
 [AuxKernels]

@@ -211,6 +211,10 @@
     family = MONOMIAL
     order = CONSTANT
   []
+  [permExp]
+    family = MONOMIAL
+    order = CONSTANT
+  []
 
 []
 
@@ -261,13 +265,23 @@
     execute_on = 'initial timestep_end'
 
   []
-  [perm]
+  [permExp]
     type = ParsedAux
     variable = perm
     coupled_variables = 'T'
+    constant_names= 'm b k0'
+    constant_expressions = '-0.01359 -9.1262 10e-13' #calculated myself via linear
+    expression = 'if(T>285, m*T+b, k0)'
+    execute_on = 'initial timestep_end'
+  []
+
+  [perm]
+    type = ParsedAux
+    variable = perm
+    coupled_variables = 'T permExp'
     constant_names= 'k0 klow'
-    constant_expressions = '10e-13 10e-25'
-    expression = '10e-13' #'if(T>800,klow,k0)'
+    constant_expressions = '10e-13 10e-20'
+    expression = 'if(T>800,klow,10^^permExp)'
     execute_on = 'initial timestep_end'
   []
   [pflow_heatflux]
