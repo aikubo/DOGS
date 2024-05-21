@@ -503,7 +503,7 @@
   end_time = 3e9
   #dtmax= 6.312e+7
   line_search = none
-  nl_abs_tol = 1e-7
+  nl_abs_tol = 1e-9
   dtmin = 1
   [TimeStepper]
     type = IterationAdaptiveDT
@@ -518,12 +518,12 @@
 [Outputs]
   [./out]
     type = Exodus
-    file_base = './visuals/two_block_simple_noperm'
+    file_base = './visuals/loglinearperm'
 
   [../]
   [csv]
     type = CSV
-    file_base = ./visuals/two_block_simple_noperm
+    file_base = ./visuals/loglinearperm
   []
 []
 [Postprocessors]

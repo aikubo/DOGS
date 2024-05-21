@@ -84,7 +84,7 @@
   [Indicators]
     [indicator]
       type = GradientJumpIndicator
-      variable = T
+      variable = velMag
     []
   []
   [Markers]
@@ -180,6 +180,10 @@
     family = MONOMIAL
     order = CONSTANT
   []
+  [velMag]
+    family = MONOMIAL
+    order = CONSTANT
+  []
 
 []
 
@@ -222,6 +226,13 @@
     fluid_phase = 0
     execute_on = 'initial timestep_end'
 
+  []
+  [velMag]
+    type = ParsedAux
+    variable = velMag
+    coupled_variables = 'water_darcy_vel_x water_darcy_vel_y'
+    expression = 'sqrt(water_darcy_vel_x^2 + water_darcy_vel_y^2)'
+    execute_on = 'initial timestep_end'
   []
   [enthalpy_water]
     type = PorousFlowPropertyAux
@@ -531,7 +542,7 @@
   end_time = 3e9
   #dtmax= 6.312e+7
   line_search = none
-  nl_abs_tol = 1e-7
+  nl_abs_tol = 1e-9
   dtmin = 1
   [TimeStepper]
     type = IterationAdaptiveDT
@@ -546,12 +557,12 @@
 [Outputs]
   [./out]
     type = Exodus
-    file_base = './visuals/two_block_simple_noperm'
+    file_base = './visuals/loglinearpermAMR'
 
   [../]
   [csv]
     type = CSV
-    file_base = ./visuals/two_block_simple_noperm
+    file_base = ./visuals/loglinearpermAMR
   []
 []
 [Postprocessors]
