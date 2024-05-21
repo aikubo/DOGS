@@ -58,6 +58,12 @@
 # NL DOF = 80800
 # try for 20k per process according to docs
 
+#fails at 1.3e8 seconds
+# KT didn't help
+# trying lowering nl_abs_tol to 1e-7 from 1e-9
+# also recompiled and updated moose
+
+
 [Mesh]
   [gen]
     type = GeneratedMeshGenerator
@@ -542,7 +548,7 @@
   end_time = 3e9
   #dtmax= 6.312e+7
   line_search = none
-  nl_abs_tol = 1e-9
+  nl_abs_tol = 1e-7
   dtmin = 1
   [TimeStepper]
     type = IterationAdaptiveDT
@@ -558,7 +564,6 @@
   [./out]
     type = Exodus
     file_base = './visuals/two_block_simple'
-    min_simulation_time_interval = 3e7
 
   [../]
   [csv]

@@ -58,6 +58,11 @@
 # NL DOF = 80800
 # try for 20k per process according to docs
 
+# fails at 1.3e8 seconds
+# nl convergence is bad
+# tried adding KT stabliziation, no difference
+
+
 [Mesh]
   [gen]
     type = GeneratedMeshGenerator
@@ -515,7 +520,7 @@
 []
 
 [Preconditioning]
-  active = mumps
+  active = andy
   [mumps] # much better than superlu
     type = SMP
     full = true
@@ -564,8 +569,6 @@
   [./out]
     type = Exodus
     file_base = './visuals/two_block_simpleKT'
-    min_simulation_time_interval = 3e7
-
   [../]
   [csv]
     type = CSV
