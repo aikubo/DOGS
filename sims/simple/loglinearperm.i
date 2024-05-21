@@ -272,16 +272,16 @@
     constant_names= 'm b k0'
     constant_expressions = '-0.01359 -9.1262 10e-13' #calculated myself via linear
     expression = 'if(T>285, m*T+b, k0)'
-    execute_on = 'initial timestep_end'
+    execute_on = 'initial nonlinear timestep_end'
   []
   [perm]
     type = ParsedAux
     variable = perm
     coupled_variables = 'T permExp'
-    constant_names= 'k0 klow'
-    constant_expressions = '10e-13 10e-20'
-    expression = 'if(T>800,klow,10^permExp)'
-    execute_on = 'initial timestep_end'
+    constant_names= 'klow k0'
+    constant_expressions = '10e-18 10e-15'
+    expression = 'if(T>900,klow,k0)'
+    execute_on = 'initial nonlinear timestep_end'
   []
   [pflow_heatflux]
     type = PorousFlowHeatFluxAux
@@ -366,6 +366,11 @@
   [dike_pressure]
     type = ParsedFunction
     expression = '1.0135e6 + (1500-y)*1000*9.81'  #hydrostatic gradientose   + atmospheric pressure in Pa
+  []
+  [kfunc]
+    type = PiecewiseLinear
+    x = '0 600 900 1600'
+    y = '10e-13 10e-13 10e-18 10e-20'
   []
 []
 
@@ -590,25 +595,10 @@
     variable = 'T'
     block = 'host'
   []
-  [pflow_heatflux_avg]
+  [Tdike_avg]
     type = ElementAverageValue
-    variable = pflow_heatflux
-    block = 'host'
-  []
-  [pflow_heatflux_max]
-    type = ElementExtremeValue
-    variable = pflow_heatflux
-    block = 'host'
-  []
-  [pflow_bc]
-    type = SideAverageValue
-    variable = pflow_heatflux
-    boundary = 'host_edge'
-  []
-  [pflow_bc2]
-    type = SideAverageValue  #pflow_heatflux not defined on dike_edge
-    variable = pflow_heatflux
-    boundary = 'dike_edge'
+    variable = 'T'
+    block = 'dike'
   []
   [flowx_bc]
     type = SideAverageValue
@@ -625,34 +615,18 @@
     variable = enthalpy
     boundary = 'host_edge'
   []
-  [gradT_bc]
+  [permExp_bc]
     type = SideAverageValue
-    variable = GradT
+    variable = permExp
     boundary = 'host_edge'
   []
-  [gradT_dike_bc]
+  [perm]
     type = SideAverageValue
-    variable = GradT_dike
-    boundary = 'dike_edge'
-  []
-  [diffT_bc]
-    type = SideAverageValue
-    variable = diffT
-    boundary = 'dike_edge'
-  []
-  [diffT_bc2]
-    type = SideAverageValue
-    variable = diffT
+    variable = perm
     boundary = 'host_edge'
-  []
-  [Tdike_avg]
-    type = ElementAverageValue
-    variable = 'T'
-    block = 'dike'
   []
   [Residual]
     type = Residual
-
   []
 []
 
