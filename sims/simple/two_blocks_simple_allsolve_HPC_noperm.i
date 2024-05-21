@@ -563,12 +563,12 @@
 [Outputs]
   [./out]
     type = Exodus
-    file_base = './visuals/two_block_simple'
+    file_base = './visuals/two_block_simple_noperm'
 
   [../]
   [csv]
     type = CSV
-    file_base = ./visuals/two_block_simple
+    file_base = ./visuals/two_block_simple_noperm
   []
 []
 [Postprocessors]
