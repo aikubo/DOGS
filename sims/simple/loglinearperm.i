@@ -1,67 +1,4 @@
-# simple fluid
-# trying two blocks
-
-# SVD: condition number            inf, 405 of 1722 singular values are (nearly) zero
-# SVD: smallest singular values: 0.000000000000e+00 6.663015007334e-23 2.617273069264e-22 3.663168320510e-22 4.808092995164e-22
-# SVD: largest singular values : 1.360954516662e+00 1.519359607295e+00 1.589988010036e+00 1.971365254318e+00 2.303490705802e+00
-# very high condition number and 405 nearly zero
-# added block restriction based on
-# https://github.com/idaholab/moose/discussions/20139
-
-# not bad after seperating T and Tdike
-# SVD: condition number 6.446542593349e+04, 0 of 1360 singular values are (nearly) zero
-# SVD: smallest singular values: 3.573209223428e-05 3.594185447286e-05 6.229076052830e-05 6.906932618048e-05 7.444232760879e-05
-# SVD: largest singular values : 1.768705906337e+00 1.829057500034e+00 1.866225582747e+00 1.971986173037e+00 2.303484545378e+00
-
-# had to add MatchedValueBC around dike to transfer Temperatures
-# works pretty well
-# Noah suggested taking k down to 1e-19 when T>300 C but I worry this might
-# cause numerical issues, could do it with ParsedAux
-# and PorousFlowPermabilityConstfromVar
-# or with PorousFlowPorosity and PermeabilityKarmenKozeny
-# (Didn't do this yet)
-# simulation looks okay and runs GREAT
-# but no plume
-# something a bit weird at left top bC between dike and host
-# high V out of domain and very hot
-# didn't include host_left in the PorousFlowPiecewiseLinearSinkBC
-# still a bit weird
-
-# lowering perm to 10e-12 gives nice plume
-
-# seems to work a bit better with
-# 1. sidesetsaroundsubdomaingenerator rather than parsed
-# 2. CoupledNeumannBC
-# 3. MatchedValueBC
-# 4. removed the block restriction from variables but not kernals
-# lots of linear solves
-# extending variables using dummy kernals helps convergence it seems
-
-# after meeting with Noah
-# I added porepressure in the dike
-# and changed the BCs to no flow on the left and right and bottom
-# ran it and had "downwelling"
-# I think it was because I was using - numbers for the the y axis
-# I changed it to 0 to 1500 and it seems to work better and removed the dike porepressure
-# I now have a plume
-# ran it on HPC and had mesh adaptivity issues
-# so i think I'll just take that out for now and see how it goes
-# [gen]
-#   type = GeneratedMeshGenerator
-#   dim = 2
-#   nx = 200
-#   ny = 200
-#   xmin = 0
-#   xmax = 1500
-#   ymax = 1500
-#   ymin = 0
-# NL DOF = 80800
-# try for 20k per process according to docs
-
-#fails at 1.3e8 seconds
-# KT didn't help
-# trying lowering nl_abs_tol to 1e-7 from 1e-9
-# also recompiled and updated moose
+# log linear perm relationship
 
 
 [Mesh]
@@ -267,11 +204,11 @@
   []
   [permExp]
     type = ParsedAux
-    variable = perm
+    variable = permExp
     coupled_variables = 'T'
-    constant_names= 'm b k0'
-    constant_expressions = '-0.01359 -9.1262 10e-13' #calculated myself via linear
-    expression = 'if(T>285, m*T+b, k0)'
+    constant_names= 'm b k0exp'
+    constant_expressions = '-0.01359 -9.1262 -13' #calculated myself via linear
+    expression = 'if(T>300, m*T+b, k0exp)'
     execute_on = 'initial nonlinear timestep_end'
   []
   [perm]
