@@ -572,6 +572,18 @@ permInput = 1e-13
   []
 []
 
+[VectorPostprocessors]
+  [T_vec]
+    type = LineValueSampler
+    variable = T
+    start_point = '0 750 0'
+    end_point = '1500 750 0'
+    num_points = 10
+    sort_by = x
+    execute_on = 'initial timestep_end'
+  []
+[]
+
 [Controls/stochastic]
   type = SamplerReceiver
 []
