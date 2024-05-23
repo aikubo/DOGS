@@ -8,23 +8,27 @@
 
 
 
+# log linear perm relationship
+
+
 [Mesh]
   [gen]
     type = GeneratedMeshGenerator
     dim = 2
-    nx = 100
+    nx = 20
     ny = 20
     xmin = 0
-    xmax = 1000
-    ymax = 0
-    ymin = -1000
+    xmax = 100
+    ymax = 100
+    ymin = 0
+    #bias_x = 1.25
   []
   [dike]
     type = SubdomainBoundingBoxGenerator
     input = gen
     block_id = 1
-    bottom_left = ' 0 -1000 0'
-    top_right = ' 50 -200 0'
+    bottom_left = ' 0 0 0'
+    top_right = ' 20 100 0'
   []
   [rename]
     type = RenameBlockGenerator
@@ -32,24 +36,12 @@
     old_block = '0 1'
     new_block = 'host dike'
   []
-  [delete]
-    type = BlockDeletionGenerator
+  [SideSetsBetweenSubdomainsGenerator]
+    type = SideSetsBetweenSubdomainsGenerator
     input = rename
-    block = 'dike'
-  []
-  [sidesets]
-    type = SideSetsFromPointsGenerator
-    input = delete
-    points = '0 -10 0
-              25 -200 0
-              50 -500 0'
-    new_boundary = 'host_100 host_010 host_100_1'
-  []
-  [rename2]
-    type = RenameBoundaryGenerator
-    input = sidesets
-    old_boundary = 'host_100 host_010 host_100_1'
-    new_boundary = 'host_left dike_edge dike_edge '
+    primary_block= 'host'
+    paired_block = 'dike'
+    new_boundary = 'host_edge'
   []
 []
 
@@ -61,7 +53,7 @@
 [UserObjects]
   [dictator]
     type = PorousFlowDictator
-    porous_flow_vars = 'porepressure T_host'
+    porous_flow_vars = 'porepressure T'
     number_fluid_phases = 1
     number_fluid_components = 1
   []
@@ -72,7 +64,7 @@
     scaling = '1e2'
 
   []
-  [T_host]
+  [T]
     scaling = '1e-5'
 
   []
@@ -103,31 +95,19 @@
     family = MONOMIAL
     order = CONSTANT
   []
-  [T_dike]
-  []
-  [length_scale]
-    family = MONOMIAL
-    order = CONSTANT
-  []
-  [heat_transfer_coefficient]
-    family = MONOMIAL
-    order = CONSTANT
-  []
   [conductivity]
       family = MONOMIAL
       order = CONSTANT
   []
-  [normal_dir_x]
+  [GradT]
     family = MONOMIAL
     order = CONSTANT
   []
-  [normal_dir_y]
+  [diffT]
     family = MONOMIAL
     order = CONSTANT
   []
-  [normal_dir_z]
-    family = MONOMIAL
-    order = CONSTANT
+  [T_dike] #comes from sub app
   []
 []
 
@@ -136,20 +116,17 @@
     type = FunctionAux
     function = ppfunc
     variable = hydrostat
-
   []
   [geotherm]
     type = FunctionAux
     variable = geotherm
     function = tfunc
     execute_on = 'initial timestep_end'
-
   []
   [porosity]
     type = PorousFlowPropertyAux
     variable = porosity
     property = porosity
-
   []
   [darcy_vel_x_kernel]
     type = PorousFlowDarcyVelocityComponent
@@ -157,7 +134,6 @@
     variable = darcy_vel_x
     fluid_phase = 0
     execute_on = 'initial timestep_end'
-
   []
   [darcy_vel_y_kernel]
     type = PorousFlowDarcyVelocityComponent
@@ -165,67 +141,44 @@
     variable = darcy_vel_y
     fluid_phase = 0
     execute_on = 'initial timestep_end'
-
   []
   [enthalpy_water]
     type = PorousFlowPropertyAux
     variable = enthalpy
     property = enthalpy
     execute_on = 'initial timestep_end'
-
   []
   [perm]
     type = ParsedAux
     variable = perm
-    coupled_variables = 'T_host'
+    coupled_variables = 'T'
     constant_names = 'k0 klow'
-    constant_expressions = '10e-11 10e-19'
+    constant_expressions = '10e-13 10e-19'
     expression = 'k0'
     execute_on = 'initial nonlinear timestep_end'
-  []
-  [boundary_normal]
-    type = PorousFlowElementNormal
-    variable = normal_dir_x
-    boundary = 'dike_edge'
-    component = x
-    execute_on = 'initial'
-  []
-  [boundary_normal2]
-    type = PorousFlowElementNormal
-    variable = normal_dir_y
-    boundary = 'dike_edge'
-    component = y
-    execute_on = 'initial'
-  []
-  [boundary_normal3]
-    type = PorousFlowElementNormal
-    variable = normal_dir_z
-    boundary = 'dike_edge'
-    component = z
-    execute_on = 'initial'
-  []
-  [length_scale]
-    type = PorousFlowElementLength
-    variable = length_scale
-    direction = '0 1 0'
-    execute_on = 'initial'
-  []
-  [heat_transfer_coefficient]
-    type = ParsedAux
-    variable = heat_transfer_coefficient
-    coupled_variables = 'length_scale'
-    constant_names = 'conductivity'
-    constant_expressions = '4'
-    expression = '2*conductivity/length_scale'
   []
   [conductivity]
     type = ParsedAux
     variable = conductivity
     coupled_variables = 'porosity'
     constant_names = 'kappaw kappar'
-    constant_expressions = '0.6 4'
+    constant_expressions = '0.6 3'
     expression = 'porosity*kappaw + (1-porosity)*(kappar)'
     execute_on = 'initial'
+  []
+  [GradTx]
+    type = VariableGradientComponent
+    variable = GradT
+    gradient_variable = 'T'
+    execute_on = 'initial timestep_end'
+    component = x
+  []
+  [diffT]
+    type = ParsedAux
+    variable = diffT
+    coupled_variables = 'conductivity GradT'
+    expression = 'conductivity*GradT'
+    execute_on = 'initial timestep_end'
   []
 []
 
@@ -238,7 +191,7 @@
   []
   [geothermal]
     type = FunctionIC
-    variable = T_host
+    variable = T
     function = tfunc
 
   []
@@ -277,12 +230,12 @@
   [PorousFlowUnsaturated_HeatConduction]
     type = PorousFlowHeatConduction
 
-    variable = T_host
+    variable = T
   []
   [PorousFlowUnsaturated_EnergyTimeDerivative]
     type = PorousFlowEnergyTimeDerivative
 
-    variable = T_host
+    variable = T
   []
   [PorousFlowFullySaturated_AdvectiveFlux0]
     type = PorousFlowFullySaturatedAdvectiveFlux
@@ -296,7 +249,7 @@
   []
   [PorousFlowFullySaturatedUpwind_HeatAdvection]
     type = PorousFlowFullySaturatedUpwindHeatAdvection
-    variable = T_host
+    variable = T
 
   []
 
@@ -306,13 +259,13 @@
   [PorousFlowActionBase_Temperature_qp]
     type = PorousFlowTemperature
 
-    temperature = 'T_host'
+    temperature = 'T'
   []
   [PorousFlowActionBase_Temperature]
     type = PorousFlowTemperature
 
     at_nodes = true
-    temperature = 'T_host'
+    temperature = 'T'
   []
   [PorousFlowActionBase_MassFraction_qp]
     type = PorousFlowMassFraction
@@ -383,66 +336,54 @@
   []
   [thermal_conductivity]
     type = PorousFlowThermalConductivityIdeal
-    dry_thermal_conductivity = '4 0 0  0 4 0  0 0 4'
-
+    dry_thermal_conductivity = '3 0 0  0 3 0  0 0 3'
+  []
+  [conductivity_dummy]
+    type = ParsedMaterial
+    property_name = conductivity_dummy
+    expression = '3'
   []
 []
 
 [BCs]
-  [matched]
-    type = MatchedValueBC
-    variable = T_host
-    boundary = 'dike_edge'
-    v = 'T_dike'
-  []
-  # [T_dike]
-  #   type = DirichletBC
-  #   variable = T_host
-  #   boundary = 'dike_edge'
-  #   value = 500
-  # []
-  [pp_dike]
-    type = NeumannBC
-    variable = porepressure
-    boundary = 'dike_edge'
-    value = 0
-  []
   [pp_like_dirichlet]
     type = PorousFlowPiecewiseLinearSink
     variable = porepressure
-    boundary = 'top bottom right'
+    boundary = 'top'
     pt_vals = '1e-9 1e9'
     multipliers = '1e-9 1e9'
-    PT_shift = 'hydrostat'
-    flux_function = 1e-4 # 1e-2 too high causes slow convergence
+    PT_shift = hydrostat
+    flux_function = 1e-6 #1e-2 too high causes slow convergence
     use_mobility = true
     use_relperm = true
     fluid_phase = 0
   []
   [T_like_dirichlet]
     type = PorousFlowPiecewiseLinearSink
-    variable = T_host
-    boundary = 'top bottom right'
+    variable = T
+    boundary = 'top'
     pt_vals = '1e-9 1e9'
     multipliers = '1e-9 1e9'
-    PT_shift = 'geotherm'
-    flux_function = 1e-4 # 1e-2 too high causes slow convergence
-    fluid_phase = 0
-    use_mobility = true
-    use_relperm = true
-    use_enthalpy = true
+    PT_shift = geotherm
+    flux_function = 1e-6 #1e-2 too high causes slow convergence
   []
-  [pp_left]
-    type = FunctionDirichletBC
+  [pp_right]
+    type = NeumannBC
     variable = porepressure
-    boundary = 'host_left'
-    function = ppfunc
+    boundary = 'host_edge right bottom'
+    value = 0
   []
-  [T_left]
-    type = FunctionDirichletBC
-    variable = T_host
-    boundary = 'host_left'
-    function = tfunc
+  [t_bc]
+    type = NeumannBC
+    variable = T
+    boundary = 'right bottom'
+    value = 0
+  []
+  [from_sub]
+    type = MatchedValueBC
+    variable = T
+    boundary = 'host_edge'
+    v = T_dike
   []
 
 []
@@ -452,7 +393,7 @@
     # sub_cyling = true
     type = TransientMultiApp
     app_type = dikesApp # NavierStokesTestApp
-    input_files = 'dummyTBC_child.i'
+    input_files = 'nsdike_child.i'
     execute_on = 'initial timestep_begin'
     catch_up = true
   []
@@ -464,36 +405,19 @@
     # The name of the variable in the sub-app
     type = MultiAppGeneralFieldShapeEvaluationTransfer
     from_multi_app = dummyTBC
-    source_variable = 'T_dike'
+    source_variable = 'T'
     variable = 'T_dike'
     bbox_factor = 1.2
-    to_boundaries = 'dike_edge'
     execute_on = 'initial timestep_begin'
   []
-  [push_l_for_htc]
+  [push_q]
     # Transfer from this app to the sub-app
     # which variable from this app?
     # which variable in the sub app?
-    type = MultiAppVariableValueSamplePostprocessorTransfer
-    to_multi_app = dummyTBC
-    source_variable = length_scale
-    postprocessor = length_scale_parent
-    execute_on = 'initial timestep_begin'
-    #to_boundaries = 'host_edge'
-  []
-  [push_k_for_htc]
-    type = MultiAppVariableValueSamplePostprocessorTransfer
-    to_multi_app = dummyTBC
-    source_variable = conductivity
-    postprocessor = conductivity_parent
-    execute_on = 'initial timestep_begin'
-    #to_boundaries = 'host_edge'
-  []
-  [push_T]
     type = MultiAppPostprocessorTransfer
     to_multi_app = dummyTBC
-    from_postprocessor = T_host_avg
-    to_postprocessor = Tout
+    from_postprocessor = q_diffusive
+    to_postprocessor = q_from_parent
     execute_on = 'initial timestep_begin'
   []
 []
@@ -501,7 +425,16 @@
 [Postprocessors]
   [T_host_avg]
     type = ElementAverageValue
-    variable = 'T_host'
+    variable = 'T'
+  []
+  [q_diffusive]
+    type = SideAverageValue
+    variable = 'diffT'
+    boundary = 'host_edge'
+  []
+  [T_dike]
+    type = ElementAverageValue
+    variable = 'T_dike'
   []
 []
 
@@ -516,25 +449,21 @@
 []
 
 [Executioner]
-  [Adaptivity]
-  interval = 1
-  refine_fraction = 0.2
-  coarsen_fraction = 0.3
-  max_h_level = 4
-  []
   type = Transient
   solve_type = PJFNK
   end_time = 1e9
   line_search = none
   automatic_scaling = true
   dt = 5000
-  dtmin = 100
+
   fixed_point_max_its = 10
   fixed_point_rel_tol = 1e-8
+  nl_abs_tol = 1e-14
   verbose = true
+
   [TimeStepper]
     type = FixedPointIterationAdaptiveDT
-    dt_initial = 1000
+    dt_initial = 0.1
     target_iterations = 6
     target_window = 0
     increase_factor = 2.0
@@ -550,7 +479,6 @@
   [out]
     type = Exodus
     file_base = ./visuals/pflowParent_test
-    additional_execute_on = 'FAILED'
 
   []
 []

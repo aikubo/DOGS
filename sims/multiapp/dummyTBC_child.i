@@ -24,15 +24,6 @@
   []
 []
 
-[Functions]
-  [htc_func]
-    type = ParsedFunction
-    symbol_names = 'conductivity_parent length_scale_parent'
-    symbol_values = 'conductivity_parent length_scale_parent'
-    expression = '2*( conductivity_parent / length_scale_parent)'
-  []
-[]
-
 [Kernels]
   [diff]
     type = HeatConduction

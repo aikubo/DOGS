@@ -13,9 +13,7 @@ cp = 1 #1100
 # Operating conditions
 y_inlet = 1
 T_inlet = 1170
-T_cold = 190
 p_outlet = 10
-hs = 10
 
 
 # Numerical scheme
@@ -27,9 +25,9 @@ velocity_interp_method = 'rc'
     type = GeneratedMeshGenerator
     dim = 2
     xmin = 0
-    xmax = 5
+    xmax = 10
     ymin = 0
-    ymax = 10
+    ymax = 100
     nx = 20
     ny = 50
   []
@@ -100,8 +98,6 @@ velocity_interp_method = 'rc'
     momentum_component = 'x'
     pressure = pressure
   []
-
-
   [v_time]
     type = INSFVMomentumTimeDerivative
     variable = vel_y
@@ -128,7 +124,6 @@ velocity_interp_method = 'rc'
     momentum_component = 'y'
     pressure = pressure
   []
-
   [T_time]
     type = INSFVEnergyTimeDerivative
     variable = T
@@ -154,13 +149,13 @@ velocity_interp_method = 'rc'
     type = INSFVInletVelocityBC
     boundary = 'bottom'
     variable = vel_x
-    function = '0'
+    functor = '0'
   []
   [inlet-v]
     type = INSFVInletVelocityBC
     boundary = 'bottom'
     variable = vel_y
-    function = 1
+    functor = 1
   []
   [inlet-T]
     type = FVNeumannBC
@@ -181,7 +176,6 @@ velocity_interp_method = 'rc'
     variable = vel_y
     function = 0
   []
-
   [symmetry-u]
     type = INSFVSymmetryVelocityBC
     boundary = 'left'
@@ -234,11 +228,9 @@ velocity_interp_method = 'rc'
   [CoolingSideBC]
     type = FVFunctorNeumannBC
     variable = T
-    functor = -100
+    functor = 'q_from_parent'
     boundary = 'top right'
   []
-
-
 
 []
 
@@ -248,8 +240,6 @@ velocity_interp_method = 'rc'
   []
   [Tfluid]
     type = MooseVariableFVReal
-  []
-  [h_parent]
   []
 []
 
@@ -272,18 +262,12 @@ velocity_interp_method = 'rc'
 
 
 [FunctorMaterials]
-  [constants]
-    type = ADGenericFunctorMaterial
-    prop_names = 'h_cv T_cold'
-    prop_values = '${hs} ${T_cold}'
-  []
   [ins_fv]
     type = INSFVEnthalpyFunctorMaterial
     rho = ${rho}
     cp = ${cp}
     temperature = 'T'
   []
-
 []
 
 [Executioner]
@@ -292,10 +276,14 @@ velocity_interp_method = 'rc'
   petsc_options_iname = '-pc_type -pc_factor_shift_type'
   petsc_options_value = 'lu NONZERO'
   line_search = 'none'
-  end_time = 4
+
   [TimeStepper]
-    type = IterationAdaptiveDT
-    dt = 0.2
+    type = FixedPointIterationAdaptiveDT
+    dt_initial = 0.1
+    target_iterations = 6
+    target_window = 0
+    increase_factor = 2.0
+    decrease_factor = 0.5
   []
 []
 
@@ -305,8 +293,7 @@ velocity_interp_method = 'rc'
 []
 
 [Postprocessors]
-  [./h_avg]
-    type = ElementAverageValue
-    variable = h_parent
+  [q_from_parent]
+    type = Receiver
   []
 []

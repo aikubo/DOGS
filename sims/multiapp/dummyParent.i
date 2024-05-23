@@ -109,7 +109,7 @@
     source_variable = T
 
     # The name of the auxiliary variable in this app
-    variable = T_bc_sub
+    variable = T_dike
 
     to_boundaries = 'dike_edge'
 
