@@ -274,7 +274,7 @@ velocity_interp_method = 'rc'
 [Executioner]
   type = Transient
   solve_type = 'NEWTON'
-  petsc_options_iname = '-pc_type -pc_factor_shift_type'
+  petsc_options_iname = '-pc_type -pSc_factor_shift_type'
   petsc_options_value = 'lu NONZERO'
   line_search = 'none'
   [TimeStepper]

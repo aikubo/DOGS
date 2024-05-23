@@ -390,13 +390,12 @@
 
 [MultiApps]
   [dummyTBC]
-    # sub_cyling = true
     type = TransientMultiApp
     app_type = dikesApp # NavierStokesTestApp
     input_files = 'nsdike_child.i'
     execute_on = 'initial timestep_begin'
-    #catch_up = true
     sub_cycling = true
+    output_sub_cycles=true
   []
 []
 
@@ -456,19 +455,11 @@
   line_search = none
   automatic_scaling = true
 
+  dt = 5000
   fixed_point_max_its = 10
   fixed_point_rel_tol = 1e-8
-  nl_abs_tol = 1e-9
+  nl_abs_tol = 1e-6
   verbose = true
-
-  [TimeStepper]
-    type = FixedPointIterationAdaptiveDT
-    dt_initial = 5000
-    target_iterations = 6
-    target_window = 0
-    increase_factor = 2.0
-    decrease_factor = 0.5
-  []
 []
 
 [Debug]
