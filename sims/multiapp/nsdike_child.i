@@ -16,6 +16,7 @@ T_inlet = 1170
 p_outlet = 10
 
 
+
 # Numerical scheme
 advected_interp_method = 'average'
 velocity_interp_method = 'rc'
@@ -276,14 +277,9 @@ velocity_interp_method = 'rc'
   petsc_options_iname = '-pc_type -pc_factor_shift_type'
   petsc_options_value = 'lu NONZERO'
   line_search = 'none'
-
   [TimeStepper]
-    type = FixedPointIterationAdaptiveDT
-    dt_initial = 0.1
-    target_iterations = 6
-    target_window = 0
-    increase_factor = 2.0
-    decrease_factor = 0.5
+    type = IterationAdaptiveDT
+    dt = 0.2
   []
 []
 
