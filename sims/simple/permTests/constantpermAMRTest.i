@@ -1,5 +1,5 @@
 # log linear perm relationship
-
+permInput = 1e-13
 
 [Mesh]
   [gen]
@@ -241,23 +241,10 @@
     execute_on = 'initial timestep_end'
 
   []
-  [permExp]
-    type = ParsedAux
-    variable = permExp
-    coupled_variables = 'T'
-    constant_names= 'm b k0exp'
-    constant_expressions = '-0.01359 -9.1262 -13' #calculated myself via linear
-    expression = 'if(T>400, m*T+b, k0exp)'
-    execute_on = 'initial nonlinear timestep_end'
-  []
   [perm]
-    type = ParsedAux
+    type = ConstantAux
     variable = perm
-    coupled_variables = 'T permExp'
-    constant_names= 'klow'
-    constant_expressions = '10e-20 '
-    expression = 'if(T>900,klow, 10^permExp)'
-    execute_on = 'initial nonlinear timestep_end'
+    value = 10e-13
   []
   [pflow_heatflux]
     type = PorousFlowHeatFluxAux
@@ -555,72 +542,36 @@
 []
 
 [Outputs]
-  [./out]
-    type = Exodus
-    file_base = './visuals/loglinearpermAMR'
+  # [./out]
+  #   type = Exodus
+  #   file_base = './visuals/loglinearpermAMR'
 
-  [../]
-  [csv]
-    type = CSV
-    file_base = ./visuals/loglinearpermAMR
-  []
+  # [../]
+  # [csv]
+  #   type = CSV
+  #   file_base = ./visuals/loglinearpermAMR
+  # []
 []
+
 [Postprocessors]
   [T_host_avg]
     type = ElementAverageValue
     variable = 'T'
     block = 'host'
   []
-  [Tdike_avg]
+  [T_dike_avg]
     type = ElementAverageValue
     variable = 'T'
     block = 'dike'
   []
-  [flowx_bc]
-    type = SideAverageValue
-    variable = water_darcy_vel_x
+  [q_dike]
+    type = SideDiffusiveFluxAverage
+    variable = 'T'
     boundary = 'host_edge'
-  []
-  [flowy_bc]
-    type = SideAverageValue
-    variable = water_darcy_vel_y
-    boundary = 'host_edge'
-  []
-  [enthalpy_bc]
-    type = SideAverageValue
-    variable = enthalpy
-    boundary = 'host_edge'
-  []
-  [permExp_bc]
-    type = SideAverageValue
-    variable = permExp
-    boundary = 'host_edge'
-  []
-  [perm]
-    type = SideAverageValue
-    variable = perm
-    boundary = 'host_edge'
-  []
-  [Residual]
-    type = Residual
+    diffusivity = 'dike_thermal_conductivity'
   []
 []
 
-# [VectorPostprocessors]
-#   [./temperature1500m]
-#     type = LineValueSampler
-#     sort_by = x
-#     variable = T
-#     start_point = '0 -1200 0'
-#     end_point = '500 -1200 0'
-#     num_points = 25
-#   []
-#   [./temperature300m]
-#     type = LineValueSampler
-#     sort_by = x
-#     variable = T
-#     start_point = '0 -600 0'
-#     end_point = '500 -600 0'
-#     num_points = 25
-#   []
-# []
+[Controls/stochastic]
+  type = SamplerReceiver
+[]
