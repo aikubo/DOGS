@@ -396,6 +396,7 @@
     input_files = 'nsdike_child.i'
     execute_on = 'initial timestep_begin'
     catch_up = true
+    sub_cycling = true
   []
 []
 
@@ -451,19 +452,18 @@
 [Executioner]
   type = Transient
   solve_type = PJFNK
-  end_time = 1e9
+  end_time = 1e7
   line_search = none
   automatic_scaling = true
-  dt = 5000
 
   fixed_point_max_its = 10
   fixed_point_rel_tol = 1e-8
-  nl_abs_tol = 1e-14
+  nl_abs_tol = 1e-9
   verbose = true
 
   [TimeStepper]
     type = FixedPointIterationAdaptiveDT
-    dt_initial = 0.1
+    dt_initial = 5000
     target_iterations = 6
     target_window = 0
     increase_factor = 2.0
