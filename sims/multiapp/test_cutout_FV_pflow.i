@@ -59,7 +59,8 @@
 
 # it works but I'm getting non physical results. negative temperatures!
 # changing back to NEWTON worked and the results look better
-
+# added permeability Temperature dependence and it actually speeds up convergence
+# doesn't change the results too much
 
 [Mesh]
   [gen]
@@ -157,6 +158,10 @@
     family = MONOMIAL
     order = CONSTANT
   []
+  [permExp]
+    family = MONOMIAL
+    order = CONSTANT
+  []
   [darcy_velx]
     family = MONOMIAL
     order = CONSTANT
@@ -207,10 +212,23 @@
     variable = porosity
     expression = '0.1'
   []
-  [permeability]
+  [permExp]
+    type = ParsedAux
+    variable = permExp
+    coupled_variables = 'T_parent'
+    constant_names= 'm b k0exp'
+    constant_expressions = '-0.01359 -9.1262 -13' #calculated myself via linear
+    expression = 'if(T_parent>400, m*T_parent+b, k0exp)'
+    execute_on = 'initial nonlinear timestep_end'
+  []
+  [perm]
     type = ParsedAux
     variable = perm
-    expression = '10e-13'
+    coupled_variables = 'T_parent permExp'
+    constant_names= 'klow'
+    constant_expressions = '10e-20 '
+    expression = 'if(T_parent>900,klow, 10^permExp)'
+    execute_on = 'initial nonlinear timestep_end'
   []
   [darcy_vel_x_kernel]
     type = PorousFlowDarcyVelocityComponent
