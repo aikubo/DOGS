@@ -108,7 +108,8 @@
   # petsc_options_iname = '-pc_type -pSc_factor_shift_type'
   # petsc_options_value = 'lu NONZERO'
 
-  nl_abs_tol = 1e-9
+  nl_abs_tol = 1e-16
+  l_abs_tol = 1e-16
 []
 
 [Postprocessors]
