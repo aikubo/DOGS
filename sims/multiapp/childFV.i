@@ -6,16 +6,16 @@
     nx = 15
     ny = 15
     xmin= 0
-    xmax = 3
+    xmax = 100
     ymin = 0
-    ymax = 7
+    ymax = 500
   []
 []
 
 [Variables]
   [T_child]
     type = INSFVEnergyVariable
-    initial_condition = 500
+    initial_condition = 1438
   []
 
 []
@@ -58,22 +58,22 @@
   [heat_conduction]
     type = FVDiffusion
     variable = T_child
-    coeff = 40
+    coeff = 4
   []
   [time_derivative]
     type = INSFVEnergyTimeDerivative
     variable = T_child
-    rho = 100
+    rho = 1000
   []
 []
 
 [FVBCs]
-  # [right]
-  #   type = FVDirichletBC
-  #   variable = T_child
-  #   boundary = 'left bottom'
-  #   value = 600.0
-  # []
+  [right]
+    type = FVDirichletBC
+    variable = T_child
+    boundary = 'bottom'
+    value = 1438
+  []
   [from_parentx]
     type = FVFunctorNeumannBC
     variable = T_child
@@ -91,8 +91,8 @@
 [FunctorMaterials]
   [ins_fv]
     type = INSFVEnthalpyFunctorMaterial
-    rho = 100
-    cp = 100
+    rho = 1000
+    cp = 1000
     temperature = 'T_child'
   []
 []
@@ -108,7 +108,7 @@
   # petsc_options_iname = '-pc_type -pSc_factor_shift_type'
   # petsc_options_value = 'lu NONZERO'
 
-  nl_abs_tol = 1e-16
+  nl_abs_tol = 1e-11
   l_abs_tol = 1e-16
 []
 

@@ -41,8 +41,25 @@
 
 # added materials and porepressure for porousflow
 # it fails completely
-# i noticed that it seems like the nschild app is not solving at all
-# because the residual is smaller than the tolerance
+
+# works but not with fixed points
+# trying to increase domain fails to converge
+# when i increase the domain
+# the nschild simulation does not solve at all????
+#  child_app0: Pre-SMO residual: 0
+# child_app0:
+# child_app0: Performing automatic scaling calculation
+# child_app0:
+# child_app0:  0 Nonlinear |R| = 0.000000e+00
+# child_app0:  Solve Converged!
+# increasing the domain made the change in temperature across the domain of the sub app
+# much smaller so it was approx zero
+# added a source term to the sub app and added execute on initial and it worked
+# also added line search = none to main app
+
+# it works but I'm getting non physical results. negative temperatures!
+# changing back to NEWTON worked and the results look better
+
 
 [Mesh]
   [gen]
@@ -51,16 +68,16 @@
     nx = 10
     ny = 10
     xmin= 0
-    xmax = 10
+    xmax = 1000
     ymin = 0
-    ymax = 10
+    ymax = 1000
   []
   [cutout]
     type = SubdomainBoundingBoxGenerator
     input = gen
     block_id = 1
     bottom_left = '0 0 0'
-    top_right = '3 7 0'
+    top_right = '100 500 0'
   []
   [rename]
     type = RenameBlockGenerator
@@ -156,29 +173,34 @@
     variable = GradTx
     gradient_variable = T_parent
     component = x
+    execute_on = 'initial timestep_end'
   []
   [GradTy]
     type = VariableGradientComponent
     variable = GradTy
     gradient_variable = T_parent
     component = y
+    execute_on = 'initial timestep_end'
   []
   [diffx]
     type = ParsedAux
     variable = diffx
     coupled_variables = 'GradTx k'
     expression = 'k*GradTx'
+    execute_on = 'initial timestep_end'
   []
   [diffy]
     type = ParsedAux
     variable = diffx
     coupled_variables = 'GradTy k'
     expression = 'k*GradTy'
+    execute_on = 'initial timestep_end'
   []
   [k]
     type = ParsedAux
     variable = k
     expression = '5'
+    execute_on = 'initial timestep_end'
   []
   [porosity]
     type = ParsedAux
@@ -243,15 +265,27 @@
   [right]
     type = DirichletBC
     variable = T_parent
-    boundary = 'top right'
+    boundary = 'top'
     value = 300.0
   []
-  [pp]
-    type = DirichletBC
+  [NeumannBC]
+    type = NeumannBC
     variable = porepressure
-    boundary = 'bottom left right top'
-    value = 1e6
+    boundary = 'right bottom left'
+    value = 0
   []
+  # [pp_like_dirichlet]
+  #   type = PorousFlowPiecewiseLinearSink
+  #   variable = porepressure
+  #   boundary = 'top right left bottom'
+  #   pt_vals = '1e-9 1e9'
+  #   multipliers = '1e-9 1e9'
+  #   PT_shift = 1e6
+  #   flux_function = 1e-5 #1e-2 too high causes slow convergence
+  #   use_mobility = true
+  #   use_relperm = true
+  #   fluid_phase = 0
+  # []
 []
 
 [FluidProperties]
@@ -341,11 +375,6 @@
     type = PorousFlowThermalConductivityIdeal
     dry_thermal_conductivity = '3 0 0  0 3 0  0 0 3'
   []
-  [conductivity_dummy]
-    type = ParsedMaterial
-    property_name = conductivity_dummy
-    expression = '3'
-  []
 []
 
 [Preconditioning]
@@ -360,26 +389,17 @@
 
 [Executioner]
   type = Transient
-  solve_type = 'PJFNK'
+  solve_type = 'NEWTON'
   end_time = 5
-  dt = 2
+  line_search = 'none'
+  dtmin = 0.01
+  dt = 1
 
-  # fixed_point_max_its = 5
-  # fixed_point_abs_tol = 1e-6
+  #fixed_point_max_its = 5
+  #fixed_point_abs_tol = 1e-6
 
-  # nl_abs_tol = 1e-8
-  # verbose = true
-[]
-
-[VectorPostprocessors]
-  [t_sampler]
-    type = LineValueSampler
-    variable = T_parent
-    start_point = '5 0 0'
-    end_point = '5 10 0'
-    num_points = 5
-    sort_by = x
-  []
+  #nl_abs_tol = 1e-8
+  #verbose = true
 []
 
 [Postprocessors]
@@ -415,6 +435,7 @@
     app_type = dikesApp
     input_files = 'childFV.i'
     execute_on = 'initial timestep_begin'
+    positions = '0 0 0'
   [../]
 []
 
