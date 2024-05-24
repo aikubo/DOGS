@@ -15,8 +15,8 @@
   [gen]
     type = GeneratedMeshGenerator
     dim = 2
-    nx = 20
-    ny = 20
+    nx = 50
+    ny = 50
     xmin = 0
     xmax = 100
     ymax = 100
@@ -407,10 +407,10 @@
 []
 
 [MultiApps]
-  [dummyTBC]
+  [nschild]
     type = TransientMultiApp
     app_type = dikesApp # NavierStokesTestApp
-    input_files = 'nsdike_child.i'
+    input_files = 'nsdike_child_nonconstantBC.i'
     execute_on = 'initial timestep_begin'
     sub_cycling = true
     output_sub_cycles=true
@@ -422,30 +422,32 @@
     # Transfer from the sub-app to this app
     # The name of the variable in the sub-app
     type = MultiAppGeneralFieldShapeEvaluationTransfer
-    from_multi_app = dummyTBC
+    from_multi_app = nschild
     source_variable = 'T'
     variable = 'T_dike'
     bbox_factor = 1.2
-    execute_on = 'initial timestep_begin'
+    execute_on = 'initial timestep_end'
   []
   [push_qx]
     # Transfer from this app to the sub-app
     # which variable from this app?
     # which variable in the sub app?
     type = MultiAppGeneralFieldShapeEvaluationTransfer
-    to_multi_app = dummyTBC
+    to_multi_app = nschild
     source_variable = diffTx
+    bbox_factor = 1.2
     variable = qx_from_parent
     execute_on = 'initial timestep_begin'
   []
-  [push_qx]
+  [push_qy]
     # Transfer from this app to the sub-app
     # which variable from this app?
     # which variable in the sub app?
     type = MultiAppGeneralFieldShapeEvaluationTransfer
-    to_multi_app = dummyTy
-    source_variable = diffTu
-    variable = qx_from_parent
+    to_multi_app = nschild
+    source_variable = diffTy
+    bbox_factor = 1.2
+    variable = qy_from_parent
     execute_on = 'initial timestep_begin'
   []
 []
@@ -457,7 +459,7 @@
   []
   [q_diffusive]
     type = SideAverageValue
-    variable = 'diffT'
+    variable = 'diffTx'
     boundary = 'host_edge'
   []
   [T_dike]
@@ -482,10 +484,10 @@
   end_time = 1e7
   line_search = none
   automatic_scaling = true
-
+  dtmin = 100
   dt = 5000
-  fixed_point_max_its = 10
-  fixed_point_rel_tol = 1e-8
+  fixed_point_max_its = 15
+  fixed_point_rel_tol = 1e-6
   nl_abs_tol = 1e-6
   verbose = true
 []
@@ -497,9 +499,9 @@
 [Outputs]
   [out]
     type = Exodus
-    file_base = ./visuals/pflowParent_test
-
+    file_base = ./visuals/pflowParent
   []
+  csv = true
 []
 
 

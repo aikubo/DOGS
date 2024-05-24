@@ -29,8 +29,8 @@ velocity_interp_method = 'rc'
     xmax = 10
     ymin = 0
     ymax = 100
-    nx = 20
-    ny = 50
+    nx = 100
+    ny = 100
   []
 []
 
@@ -298,6 +298,33 @@ velocity_interp_method = 'rc'
     dt = 0.2
   []
 []
+
+[Postprocessors]
+  [T]
+    type = SideAverageValue
+    variable = 'T'
+    boundary = 'top right'
+  []
+  [q_from_parent]
+    type = SideAverageValue
+    variable = 'qx_from_parent'
+    boundary = 'right'
+  []
+  [density_avg]
+    type = ElementAverageValue
+    variable = 'density'
+  []
+  [u_avg]
+    type = ElementAverageValue
+    variable = 'vel_x'
+  []
+
+[]
+
+[Debug]
+  show_var_residual_norms = true
+[]
+
 
 [Outputs]
   exodus = true
