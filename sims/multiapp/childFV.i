@@ -414,8 +414,7 @@ velocity_interp_method = 'rc'
 
 [Executioner]
   type = Transient
-  end_time = 50
-  dt = 1
+  end_time = 1e6
   automatic_scaling = true
   line_search = 'none'
   # petsc_options_iname = '-pc_type -pSc_factor_shift_type'
@@ -427,6 +426,11 @@ velocity_interp_method = 'rc'
   nl_rel_tol = 1e-5
   nl_abs_tol = 1e-7
   nl_max_its = 30
+
+  [TimeStepper]
+    type = IterationAdaptiveDT
+    dt = 100
+  []
 []
 
 [Postprocessors]
@@ -439,6 +443,13 @@ velocity_interp_method = 'rc'
     type = SideAverageValue
     variable = qx
     boundary = 'right'
+  []
+  [qxchild]
+    type = SideDiffusiveFluxIntegral
+    variable = T_child
+    boundary = 'right'
+    functor_diffusivity= 'k_mixture'
+    execute_on = 'transfer'
   []
   [t_avg]
     type = ElementAverageValue

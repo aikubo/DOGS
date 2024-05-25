@@ -393,19 +393,22 @@
 [Executioner]
   type = Transient
   solve_type = 'NEWTON'
-  end_time = 50
+  end_time = 1e6
   line_search = 'none'
   dtmin = 0.01
-  dt = 1
   automatic_scaling = true
 
-  fixed_point_max_its = 15
-  fixed_point_abs_tol = 1e-4
-  fixed_point_rel_tol = 1e-3
+  fixed_point_max_its = 10
+  fixed_point_abs_tol = 1e-5
+  fixed_point_rel_tol = 1e-4
 
-  nl_abs_tol = 1e-8
+  nl_abs_tol = 1e-9
   nl_rel_tol = 1e-6
   verbose = true
+  [TimeStepper]
+    type = IterationAdaptiveDT
+    dt = 1000
+  []
 []
 
 [Postprocessors]
@@ -423,6 +426,13 @@
     variable = diffx
     boundary = 'interface'
   []
+  [qxparent]
+    type = SideDiffusiveFluxIntegral
+    variable = T_parent
+    boundary = 'interface'
+    diffusivity = 4
+    execute_on = 'transfer'
+  []
 []
 
 [Outputs]
@@ -435,7 +445,7 @@
     type = TransientMultiApp
     app_type = dikesApp
     input_files = 'childFV.i'
-    #execute_on = 'initial timestep_begin'
+    sub_cycling = true
     positions = '0 0 0'
   [../]
 []
@@ -447,21 +457,33 @@
     source_variable = T_child
     variable = T_cutout
     bbox_factor = 1.2
+    execute_on = 'initial timestep_begin'
+
   [../]
   [push_qx]
     # Transfer from this app to the sub-app
     # which variable from this app?
     # which variable in the sub app?
-    type = MultiAppGeneralFieldNearestNodeTransfer
+    type = MultiAppGeneralFieldNearestLocationTransfer
     to_multi_app = child_app
     source_variable = GradTx
     #bbox_factor = 1.2
     variable = GradTx_from_parent
+    execute_on = 'initial timestep_end'
+
+
+    # # The following inputs specify what postprocessors should be conserved
+    # # N pps are specified on the parent side, where N is the number of subapps
+    # # 1 pp is specified on the subapp side
+    # to_postprocessors_to_be_preserved = 'qxchild'
+    # from_postprocessors_to_be_preserved = 'qxparent'
+
   []
   [push_cond]
-    type = MultiAppGeneralFieldNearestNodeTransfer
+    type = MultiAppGeneralFieldNearestLocationTransfer
     to_multi_app = child_app
     source_variable = k
     variable = k_from_parent
+    execute_on = 'initial timestep_end'
   []
 []
