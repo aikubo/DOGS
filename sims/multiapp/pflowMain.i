@@ -16,6 +16,29 @@
 
 # transfers back and forth worked for FE kernals
 # but the q tranfer from FE to FV doesn't seem to be working
+# MultiAppGeneralFieldShapeEvaluationTransfer does not work
+# to transfer field variables from FE to FV
+# MultiAppGeneralFieldNearestNodeTransfer works
+
+# try with FixedPoints?
+# withoutfixed points works fine
+# with it fails to converge
+# took out rel and abs tol and still no convergence
+
+#adjusting tolerances got FixedPoints to converge
+# based on
+# https://github.com/idaholab/moose/discussions/24116
+
+# fixed_point_abs_tol >> nl_abs_tol
+# for FixedPoints to converge
+
+# in the sub app, 1e-9 would not converger
+# but added precond and automatic_scaling and it worked
+
+# for some reason transfering parsed variable of k*gradT doesn't work
+# just transfering k and gradT and doing the multiplication in the sub app works
+# checked that changing the sub app resolution doesn't change the results
+
 
 [Mesh]
   [gen]
@@ -57,6 +80,8 @@
 
 [Variables]
   [T_parent]
+    order = FIRST
+    family = LAGRANGE
     initial_condition = 300
   []
 
@@ -65,28 +90,57 @@
 [AuxVariables]
   [T_cutout]
   []
-  [diffTx]
-  []
   [GradTx]
+    family = MONOMIAL
+    order = CONSTANT
+  []
+  [GradTy]
+    family = MONOMIAL
+    order = CONSTANT
+  []
+  [diffx]
+    family = MONOMIAL
+    order = CONSTANT
+  []
+  [diffy]
+    family = MONOMIAL
+    order = CONSTANT
+  []
+  [k]
+    family = MONOMIAL
+    order = CONSTANT
   []
 []
 
 [AuxKernels]
-  [diffTx]
-    type = ParsedAux
-    variable = diffTx
-    coupled_variables = 'GradTx'
-    expression = '-5*GradTx'
-    execute_on = 'initial timestep_end'
-  []
   [GradTx]
-    type = ConstantAux
+    type = VariableGradientComponent
     variable = GradTx
-    value = 1000
-    # type = VariableGradientComponent
-    # variable = GradTx
-    # gradient_variable = T_parent
-    # component = x
+    gradient_variable = T_parent
+    component = x
+  []
+  [GradTy]
+    type = VariableGradientComponent
+    variable = GradTy
+    gradient_variable = T_parent
+    component = y
+  []
+  [diffx]
+    type = ParsedAux
+    variable = diffx
+    coupled_variables = 'GradTx k'
+    expression = 'k*GradTx'
+  []
+  [diffy]
+    type = ParsedAux
+    variable = diffx
+    coupled_variables = 'GradTy k'
+    expression = 'k*GradTy'
+  []
+  [k]
+    type = ParsedAux
+    variable = k
+    expression = '5'
   []
 []
 
@@ -102,12 +156,6 @@
 []
 
 [BCs]
-  # [interface_bc]
-  #   type = DirichletBC
-  #   variable = T_parent
-  #   boundary = interface
-  #   value = 500.0
-  # []
   [Matched]
     type = MatchedValueBC
     variable = T_parent
@@ -139,6 +187,12 @@
   type = Transient
   end_time = 5
   dt = 1
+
+  fixed_point_max_its = 5
+  fixed_point_abs_tol = 1e-6
+
+  nl_abs_tol = 1e-8
+  verbose = true
 []
 
 [VectorPostprocessors]
@@ -162,9 +216,14 @@
     type = ElementAverageValue
     variable = T_parent
   []
-  [q_diffusive]
+  [qx_side_avg]
     type = SideAverageValue
-    variable = 'diffTx'
+    variable = diffx
+    boundary = 'interface'
+  []
+  [qy_side_avg]
+    type = SideAverageValue
+    variable = diffy
     boundary = 'interface'
   []
 []
@@ -178,7 +237,7 @@
   [./child_app]
     type = TransientMultiApp
     app_type = dikesApp
-    input_files = 'child.i'
+    input_files = 'nsdikeChild.i'
     execute_on = 'timestep_begin'
   [../]
 []
@@ -195,11 +254,26 @@
     # Transfer from this app to the sub-app
     # which variable from this app?
     # which variable in the sub app?
-    type = MultiAppGeneralFieldShapeEvaluationTransfer
+    type = MultiAppGeneralFieldNearestNodeTransfer
     to_multi_app = child_app
-    source_variable = diffTx
-    bbox_factor = 1.2
-    variable = qx_from_parent
-
+    source_variable = GradTx
+    #bbox_factor = 1.2
+    variable = GradTx_from_parent
+  []
+  [push_qy]
+    # Transfer from this app to the sub-app
+    # which variable from this app?
+    # which variable in the sub app?
+    type = MultiAppGeneralFieldNearestNodeTransfer
+    to_multi_app = child_app
+    source_variable = GradTy
+    #bbox_factor = 1.2
+    variable = GradTy_from_parent
+  []
+  [push_cond]
+    type = MultiAppGeneralFieldNearestNodeTransfer
+    to_multi_app = child_app
+    source_variable = k
+    variable = k_from_parent
   []
 []

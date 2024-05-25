@@ -7,28 +7,27 @@
 # so we need to multiply by the timestep to get the heatflux
 
 # Fluid properties
-mu = 100
-rho_liquid = 2700
-k_liquid = 4
-cp_liquid = 1100
+mu = 100 #Pa S
+rho_liquid = 2700 #kg/m^3
+k_liquid = 4 #W/mK
+cp_liquid = 1100 #J/kgK
 
 # Solid properties
-rho_solid = 3000
-k_solid = 4
-cp_solid = 1100
+rho_solid = 3000 #kg/m^3
+k_solid = 4 #W/mK
+cp_solid = 1100 #J/kgK
 
 # Phase change
-L = 300000
-T_solidus = 1170
-T_liquidus = 1438
-alpha_b = 1.2e-4
+L = 300000 #J/kg
+T_solidus = 1170 #K
+T_liquidus = 1438 #K
+alpha_b = 1.2e-4 #K^-1
 #bd=1.7
 
 # Operating conditions
-y_inlet = 1
-T_inlet = 1438
-p_outlet = 10
-
+y_inlet = 1 #m/s
+T_inlet = 1438 #K
+p_outlet = 10 #Pa
 
 
 # Numerical scheme
