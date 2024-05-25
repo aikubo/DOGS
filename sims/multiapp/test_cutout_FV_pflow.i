@@ -78,7 +78,7 @@
     input = gen
     block_id = 1
     bottom_left = '0 0 0'
-    top_right = '100 500 0'
+    top_right = '100 1000 0'
   []
   [rename]
     type = RenameBlockGenerator
@@ -134,15 +134,7 @@
     family = MONOMIAL
     order = CONSTANT
   []
-  [GradTy]
-    family = MONOMIAL
-    order = CONSTANT
-  []
   [diffx]
-    family = MONOMIAL
-    order = CONSTANT
-  []
-  [diffy]
     family = MONOMIAL
     order = CONSTANT
   []
@@ -180,25 +172,11 @@
     component = x
     execute_on = 'initial timestep_end'
   []
-  [GradTy]
-    type = VariableGradientComponent
-    variable = GradTy
-    gradient_variable = T_parent
-    component = y
-    execute_on = 'initial timestep_end'
-  []
   [diffx]
     type = ParsedAux
     variable = diffx
     coupled_variables = 'GradTx k'
     expression = 'k*GradTx'
-    execute_on = 'initial timestep_end'
-  []
-  [diffy]
-    type = ParsedAux
-    variable = diffx
-    coupled_variables = 'GradTy k'
-    expression = 'k*GradTy'
     execute_on = 'initial timestep_end'
   []
   [k]
@@ -283,13 +261,13 @@
   [right]
     type = DirichletBC
     variable = T_parent
-    boundary = 'top'
+    boundary = 'right'
     value = 300.0
   []
   [NeumannBC]
     type = NeumannBC
     variable = porepressure
-    boundary = 'right bottom left'
+    boundary = 'right bottom interface'
     value = 0
   []
   # [pp_like_dirichlet]
@@ -396,6 +374,7 @@
 []
 
 [Preconditioning]
+  active = mumps
   [mumps]
     # much better than superlu
     type = SMP
@@ -403,21 +382,30 @@
     petsc_options_iname = '-pc_type -pc_factor_mat_solver_package'
     petsc_options_value = ' lu       mumps'
   []
+  [basic]
+    type = SMP
+    full = true
+    petsc_options_iname = '-pc_type -pc_factor_shift_type '
+    petsc_options_value = '  lu NONZERO'
+    []
 []
 
 [Executioner]
   type = Transient
   solve_type = 'NEWTON'
-  end_time = 5
+  end_time = 50
   line_search = 'none'
   dtmin = 0.01
   dt = 1
+  automatic_scaling = true
 
-  #fixed_point_max_its = 5
-  #fixed_point_abs_tol = 1e-6
+  fixed_point_max_its = 15
+  fixed_point_abs_tol = 1e-4
+  fixed_point_rel_tol = 1e-3
 
-  #nl_abs_tol = 1e-8
-  #verbose = true
+  nl_abs_tol = 1e-8
+  nl_rel_tol = 1e-6
+  verbose = true
 []
 
 [Postprocessors]
@@ -435,11 +423,6 @@
     variable = diffx
     boundary = 'interface'
   []
-  [qy_side_avg]
-    type = SideAverageValue
-    variable = diffy
-    boundary = 'interface'
-  []
 []
 
 [Outputs]
@@ -452,7 +435,7 @@
     type = TransientMultiApp
     app_type = dikesApp
     input_files = 'childFV.i'
-    execute_on = 'initial timestep_begin'
+    #execute_on = 'initial timestep_begin'
     positions = '0 0 0'
   [../]
 []
@@ -474,16 +457,6 @@
     source_variable = GradTx
     #bbox_factor = 1.2
     variable = GradTx_from_parent
-  []
-  [push_qy]
-    # Transfer from this app to the sub-app
-    # which variable from this app?
-    # which variable in the sub app?
-    type = MultiAppGeneralFieldNearestNodeTransfer
-    to_multi_app = child_app
-    source_variable = GradTy
-    #bbox_factor = 1.2
-    variable = GradTy_from_parent
   []
   [push_cond]
     type = MultiAppGeneralFieldNearestNodeTransfer

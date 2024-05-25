@@ -277,10 +277,12 @@ velocity_interp_method = 'rc'
   petsc_options_iname = '-pc_type -pSc_factor_shift_type'
   petsc_options_value = 'lu NONZERO'
   line_search = 'none'
-  [TimeStepper]
-    type = IterationAdaptiveDT
-    dt = 0.2
-  []
+  nl_abs_tol = 1e-6
+  dt=100
+  # [TimeStepper]
+  #   type = IterationAdaptiveDT
+  #   dt = 0.2
+  # []
 []
 
 [Outputs]
@@ -289,7 +291,23 @@ velocity_interp_method = 'rc'
 []
 
 [Postprocessors]
-  [q_from_parent]
-    type = Receiver
+  [T]
+    type = SideAverageValue
+    variable = 'T'
+    boundary = 'top right'
   []
+  [q_from_parent]
+    type = SideAverageValue
+    variable = 'qx_from_parent'
+    boundary = 'right'
+  []
+  [density_avg]
+    type = ElementAverageValue
+    variable = 'density'
+  []
+  [u_avg]
+    type = ElementAverageValue
+    variable = 'vel_x'
+  []
+
 []
