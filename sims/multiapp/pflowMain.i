@@ -1,3 +1,112 @@
+
+!include pflow.i
+[BCs]
+  inactive = 'Matched_Single'
+  [Matched_Multi]
+    type = MatchedValueBC
+    variable = T_parent
+    boundary = interface
+    v = T_cutout
+  []
+[]
+
+[MultiApps]
+  [./child_app]
+    type = TransientMultiApp
+    app_type = dikesApp
+    input_files = 'nsdikeChild.i'
+    execute_on = 'timestep_begin'
+  [../]
+[]
+
+[Transfers]
+  [./transfer_to_child]
+    type =  MultiAppGeneralFieldShapeEvaluationTransfer
+    from_multi_app = child_app
+    source_variable = T_child
+    variable = T_cutout
+    bbox_factor = 1.2
+  [../]
+  [push_qx]
+    # Transfer from this app to the sub-app
+    # which variable from this app?
+    # which variable in the sub app?
+    type = MultiAppGeneralFieldNearestNodeTransfer
+    to_multi_app = child_app
+    source_variable = GradTx
+    #bbox_factor = 1.2
+    variable = GradTx_from_parent
+  []
+  [push_cond]
+    type = MultiAppGeneralFieldNearestNodeTransfer
+    to_multi_app = child_app
+    source_variable = k
+    variable = k_from_parent
+  []
+[]
+
+[AuxVariables]
+  [T_cutout]
+  []
+  [GradTx]
+    family = MONOMIAL
+    order = CONSTANT
+  []
+  [diffx]
+    family = MONOMIAL
+    order = CONSTANT
+  []
+  [k]
+    family = MONOMIAL
+    order = CONSTANT
+  []
+[]
+
+[AuxKernels]
+  [GradTx]
+    type = VariableGradientComponent
+    variable = GradTx
+    gradient_variable = T_parent
+    component = x
+    execute_on = 'initial timestep_end'
+  []
+  [diffx]
+    type = ParsedAux
+    variable = diffx
+    coupled_variables = 'GradTx k'
+    expression = 'k*GradTx'
+    execute_on = 'initial timestep_end'
+  []
+  [k]
+    type = ParsedAux
+    variable = k
+    expression = '5'
+    execute_on = 'initial timestep_end'
+  []
+[]
+
+[Executioner]
+  fixed_point_max_its = 10
+  fixed_point_abs_tol = 1e-5
+  fixed_point_rel_tol = 1e-4
+[]
+
+[Postprocessors]
+  [dtpost]
+    type = TimestepSize
+    execute_on = TIMESTEP_BEGIN
+  []
+[]
+
+[Outputs]
+  checkpoint = true
+[]
+
+##############################
+#              Notes
+#####################################
+
+
 # testing cutout
 # testing
 
@@ -39,241 +148,31 @@
 # just transfering k and gradT and doing the multiplication in the sub app works
 # checked that changing the sub app resolution doesn't change the results
 
+# added materials and porepressure for porousflow
+# it fails completely
 
-[Mesh]
-  [gen]
-    type = GeneratedMeshGenerator
-    dim = 2
-    nx = 10
-    ny = 10
-    xmin= 0
-    xmax = 10
-    ymin = 0
-    ymax = 10
-  []
-  [cutout]
-    type = SubdomainBoundingBoxGenerator
-    input = gen
-    block_id = 1
-    bottom_left = '0 0 0'
-    top_right = '3 7 0'
-  []
-  [rename]
-    type = RenameBlockGenerator
-    input = cutout
-    old_block = '0 1'
-    new_block = 'host dike'
-  []
-  [between]
-   type = SideSetsBetweenSubdomainsGenerator
-   input = rename
-   primary_block = 'host'
-   paired_block = 'dike'
-   new_boundary = interface
-  []
-  [delete]
-    type = BlockDeletionGenerator
-    input = between
-    block = 'dike'
-  []
-[]
+# works but not with fixed points
+# trying to increase domain fails to converge
+# when i increase the domain
+# the nschild simulation does not solve at all????
+#  child_app0: Pre-SMO residual: 0
+# child_app0:
+# child_app0: Performing automatic scaling calculation
+# child_app0:
+# child_app0:  0 Nonlinear |R| = 0.000000e+00
+# child_app0:  Solve Converged!
+# increasing the domain made the change in temperature across the domain of the sub app
+# much smaller so it was approx zero
+# added a source term to the sub app and added execute on initial and it worked
+# also added line search = none to main app
 
-[Variables]
-  [T_parent]
-    order = FIRST
-    family = LAGRANGE
-    initial_condition = 300
-  []
+# it works but I'm getting non physical results. negative temperatures!
+# changing back to NEWTON worked and the results look better
+# added permeability Temperature dependence and it actually speeds up convergence
+# doesn't change the results too much
 
-[]
+# added physics into childfv and it works
+# very high cp means that temp doesn't change much in the sub app (at all)
+# but it still appears to be solving
 
-[AuxVariables]
-  [T_cutout]
-  []
-  [GradTx]
-    family = MONOMIAL
-    order = CONSTANT
-  []
-  [GradTy]
-    family = MONOMIAL
-    order = CONSTANT
-  []
-  [diffx]
-    family = MONOMIAL
-    order = CONSTANT
-  []
-  [diffy]
-    family = MONOMIAL
-    order = CONSTANT
-  []
-  [k]
-    family = MONOMIAL
-    order = CONSTANT
-  []
-[]
-
-[AuxKernels]
-  [GradTx]
-    type = VariableGradientComponent
-    variable = GradTx
-    gradient_variable = T_parent
-    component = x
-  []
-  [GradTy]
-    type = VariableGradientComponent
-    variable = GradTy
-    gradient_variable = T_parent
-    component = y
-  []
-  [diffx]
-    type = ParsedAux
-    variable = diffx
-    coupled_variables = 'GradTx k'
-    expression = 'k*GradTx'
-  []
-  [diffy]
-    type = ParsedAux
-    variable = diffx
-    coupled_variables = 'GradTy k'
-    expression = 'k*GradTy'
-  []
-  [k]
-    type = ParsedAux
-    variable = k
-    expression = '5'
-  []
-[]
-
-[Kernels]
-  [heat_conduction]
-    type = HeatConduction
-    variable = T_parent
-  []
-  [time_derivative]
-    type = HeatConductionTimeDerivative
-    variable = T_parent
-  []
-[]
-
-[BCs]
-  [Matched]
-    type = MatchedValueBC
-    variable = T_parent
-    boundary = interface
-    v = T_cutout
-  []
-  [right]
-    type = DirichletBC
-    variable = T_parent
-    boundary = 'top right'
-    value = 300.0
-  []
-[]
-
-[Materials]
-  [thermal]
-    type = HeatConductionMaterial
-    thermal_conductivity = 45.0
-    specific_heat = 0.5
-  []
-  [density]
-    type = GenericConstantMaterial
-    prop_names = 'density'
-    prop_values = 8000.0
-  []
-[]
-
-[Executioner]
-  type = Transient
-  end_time = 5
-  dt = 1
-
-  fixed_point_max_its = 5
-  fixed_point_abs_tol = 1e-6
-
-  nl_abs_tol = 1e-8
-  verbose = true
-[]
-
-[VectorPostprocessors]
-  [t_sampler]
-    type = LineValueSampler
-    variable = T_parent
-    start_point = '5 0 0'
-    end_point = '5 10 0'
-    num_points = 5
-    sort_by = x
-  []
-[]
-
-[Postprocessors]
-  [t_avg_interface]
-    type = SideAverageValue
-    variable = T_parent
-    boundary = 'interface'
-  []
-  [t_avg]
-    type = ElementAverageValue
-    variable = T_parent
-  []
-  [qx_side_avg]
-    type = SideAverageValue
-    variable = diffx
-    boundary = 'interface'
-  []
-  [qy_side_avg]
-    type = SideAverageValue
-    variable = diffy
-    boundary = 'interface'
-  []
-[]
-
-[Outputs]
-  csv = true
-  exodus = true
-[]
-
-[MultiApps]
-  [./child_app]
-    type = TransientMultiApp
-    app_type = dikesApp
-    input_files = 'nsdikeChild.i'
-    execute_on = 'timestep_begin'
-  [../]
-[]
-
-[Transfers]
-  [./transfer_to_child]
-    type =  MultiAppGeneralFieldShapeEvaluationTransfer
-    from_multi_app = child_app
-    source_variable = T_child
-    variable = T_cutout
-    bbox_factor = 1.2
-  [../]
-  [push_qx]
-    # Transfer from this app to the sub-app
-    # which variable from this app?
-    # which variable in the sub app?
-    type = MultiAppGeneralFieldNearestNodeTransfer
-    to_multi_app = child_app
-    source_variable = GradTx
-    #bbox_factor = 1.2
-    variable = GradTx_from_parent
-  []
-  [push_qy]
-    # Transfer from this app to the sub-app
-    # which variable from this app?
-    # which variable in the sub app?
-    type = MultiAppGeneralFieldNearestNodeTransfer
-    to_multi_app = child_app
-    source_variable = GradTy
-    #bbox_factor = 1.2
-    variable = GradTy_from_parent
-  []
-  [push_cond]
-    type = MultiAppGeneralFieldNearestNodeTransfer
-    to_multi_app = child_app
-    source_variable = k
-    variable = k_from_parent
-  []
-[]
+# added subcycling and it works
