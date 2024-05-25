@@ -1,14 +1,11 @@
-# temperatre transfer seems to be working
-# but the heat flux is not being transferred?
-# block doesn't seem to cool
-# there was an issue with the temperature transfer because
-# it wasn't being transferred to the top boundary in the parent app
-# i increased the bbox_factor to 1.2 and the child app to be slightly wider
-# and slightly taller than the deleted block in the parent app
+#multiapp
 
+# doesn't work with fixed points + subcycling
+# I'm not sure what is wrong so ill just try with the same dt
+# with the same dt it runs but it
+# yields completely wrong temperatures
+# in the parent, tdike is very odd so I think I'll just delete it
 
-
-# log linear perm relationship
 
 
 [Mesh]
@@ -36,12 +33,17 @@
     old_block = '0 1'
     new_block = 'host dike'
   []
-  [SideSetsBetweenSubdomainsGenerator]
+  [sidesets]
     type = SideSetsBetweenSubdomainsGenerator
     input = rename
     primary_block= 'host'
     paired_block = 'dike'
     new_boundary = 'host_edge'
+  []
+  [delete]
+    type = BlockDeletionGenerator
+    input = sidesets
+    block = 'dike'
   []
 []
 
@@ -412,8 +414,8 @@
     app_type = dikesApp # NavierStokesTestApp
     input_files = 'nsdike_child_nonconstantBC.i'
     execute_on = 'initial timestep_begin'
-    sub_cycling = true
-    output_sub_cycles=true
+    #sub_cycling = true
+    #output_sub_cycles=true
   []
 []
 
@@ -426,7 +428,7 @@
     source_variable = 'T'
     variable = 'T_dike'
     bbox_factor = 1.2
-    execute_on = 'initial timestep_end'
+    execute_on = 'initial timestep_begin'
   []
   [push_qx]
     # Transfer from this app to the sub-app
@@ -484,12 +486,12 @@
   end_time = 1e7
   line_search = none
   automatic_scaling = true
-  dtmin = 100
-  dt = 5000
-  fixed_point_max_its = 15
-  fixed_point_rel_tol = 1e-6
-  nl_abs_tol = 1e-6
-  verbose = true
+  dtmin = 10
+  dt = 100
+  # fixed_point_max_its = 15
+  # fixed_point_rel_tol = 1e-6
+  # nl_abs_tol = 1e-6
+  # verbose = true
 []
 
 [Debug]
