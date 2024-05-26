@@ -17,7 +17,7 @@
   []
   [MC]
     type = MonteCarlo
-    num_rows = 5
+    num_rows = 20
     distributions = 'k'
     execute_on = INITIAL # create random numbers on initial and use them for each timestep
   []
@@ -91,10 +91,4 @@
   [out]
     type = JSON
   []
-[]
-
-[Executioner]
-  type = Transient
-  end_time = 3e9
-  dt = 1e6
 []

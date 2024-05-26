@@ -2,8 +2,8 @@ depthAtTop = 1500 #m
 L = 1000 #m
 W = 100 #m
 
-nx = 20
-ny = 20
+nx = 50
+ny = 50
 
 geotherm = '${fparse 10/1000}' #K/m
 
@@ -17,6 +17,7 @@ geotherm = '${fparse 10/1000}' #K/m
     xmax = '${fparse L*2}'
     ymin = 0
     ymax = ${L}
+    bias_x = 1.2
   []
   [cutout]
     type = SubdomainBoundingBoxGenerator
