@@ -17,7 +17,7 @@
   []
   [MC]
     type = MonteCarlo
-    num_rows = 10
+    num_rows = 5
     distributions = 'k'
     execute_on = INITIAL # create random numbers on initial and use them for each timestep
   []
@@ -25,7 +25,7 @@
 
 [MultiApps]
   [runner]
-    type = SamplerFullSolveMultiApp
+    type = SamplerTransientMultiApp
     sampler = MC
     input_files = 'constantpermAMRTest.i'
     mode = batch-reset
@@ -92,4 +92,10 @@
   [out]
     type = JSON
   []
+[]
+
+[Executioner]
+  type = Transient
+  end_time = 3e9
+  dt = 1e6
 []

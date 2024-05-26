@@ -282,19 +282,20 @@ geotherm = '${fparse 10/1000}' #K/m
   # 1.5e9 is 47.5 years
   solve_type = NEWTON # MUCH better than PJFNK
   automatic_scaling = true
-  end_time = 10e9
-  #dtmax= 6.312e+7
-  line_search = none
-  nl_abs_tol = 1e-7
-  dtmin = 1
-  error_on_dtmin = false
-  steady_state_detection = true
-  steady_state_tolerance = 1e-12
-  verbose = true
-  [TimeStepper]
-    type = IterationAdaptiveDT
-    dt = 1e6
-  []
+  end_time = 3e9
+  dt = 1e6
+  # #dtmax= 6.312e+7
+  # line_search = none
+  # nl_abs_tol = 1e-7
+  # dtmin = 1
+  # error_on_dtmin = false
+  # steady_state_detection = true
+  # steady_state_tolerance = 1e-12
+  # verbose = true
+  # [TimeStepper]
+  #   type = IterationAdaptiveDT
+  #   dt = 1e6
+  # []
 []
 
 [Postprocessors]
