@@ -30,7 +30,6 @@
     input_files = 'constantpermAMRTest.i'
     mode = normal
     ignore_solve_not_converge = true
-
   []
 []
 
