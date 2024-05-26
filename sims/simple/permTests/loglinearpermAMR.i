@@ -1,78 +1,42 @@
-# log linear perm relationship
+depthAtTop = 1500 #m
+L = 1000 #m
+W = 100 #m
 
+nx = 20
+ny = 20
+
+geotherm = '${fparse 10/1000}' #K/m
 
 [Mesh]
   [gen]
     type = GeneratedMeshGenerator
     dim = 2
-    nx = 200
-    ny = 200
-    xmin = 0
-    xmax = 1500
-    ymax = 1500
+    nx = ${nx}
+    ny = ${ny}
+    xmin= 0
+    xmax = '${fparse L*2}'
     ymin = 0
-    #bias_x = 1.25
+    ymax = ${L}
   []
-  [dike]
+  [cutout]
     type = SubdomainBoundingBoxGenerator
     input = gen
     block_id = 1
-    bottom_left = ' 0 0 0'
-    top_right = ' 50 1200 0'
+    bottom_left = '0 0 0'
+    top_right = '${W} ${L} 0'
   []
   [rename]
     type = RenameBlockGenerator
-    input = dike
+    input = cutout
     old_block = '0 1'
     new_block = 'host dike'
   []
-  [sidesets]
-    type = SideSetsAroundSubdomainGenerator
-    input = rename
-    block = 'dike'
-    new_boundary = 'dike_center'
-    normal = '-1 0 0'
-  []
-  [sidesets2]
-    type = SideSetsAroundSubdomainGenerator
-    input = sidesets
-    block = 'dike'
-    new_boundary = 'dike_edge_R'
-    normal = '1 0 0'
-  []
-  [sidesets3]
-    type = SideSetsAroundSubdomainGenerator
-    input = sidesets2
-    block = 'dike'
-    new_boundary = 'dike_edge_top'
-    normal = '0 1 0'
-  []
-  [sidesets4]
-    type = SideSetsAroundSubdomainGenerator
-    input = sidesets3
-    block = 'host'
-    new_boundary = 'host_bottom'
-    normal = '0 -1 0'
-  []
-  [sidesets5]
-    type = SideSetsAroundSubdomainGenerator
-    input = sidesets4
-    block = 'host'
-    new_boundary = 'host_left'
-    normal = '-1 0 0'
-  []
-  [sidesets6]
-    type = RenameBoundaryGenerator
-    input = sidesets5
-    old_boundary = 'dike_edge_R dike_edge_top'
-    new_boundary = 'dike_edge dike_edge'
-  []
-  [SideSetsBetweenSubdomainsGenerator]
-    type = SideSetsBetweenSubdomainsGenerator
-    input = sidesets6
-    primary_block= 'host'
-    paired_block = 'dike'
-    new_boundary = 'host_edge'
+  [between]
+   type = SideSetsBetweenSubdomainsGenerator
+   input = rename
+   primary_block = 'host'
+   paired_block = 'dike'
+   new_boundary = interface
   []
 []
 
@@ -275,7 +239,7 @@
     variable = diffT
     component = normal
     diffusion_variable = T
-    boundary = 'dike_edge host_edge'
+    boundary = 'dike_edge interface'
     check_boundary_restricted = false
   []
 []
@@ -287,12 +251,6 @@
     function = ppfunc
    # block = 'host'
   []
-  # [dike_pp]
-  #   type = FunctionIC
-  #   variable = porepressure
-  #   function = dike_pressure
-  #   block = 'dike'
-  # []
   [geothermal]
     type = FunctionIC
     variable = T
@@ -303,11 +261,6 @@
     type = ConstantIC
     variable = porosity
     value = 0.2
-    # type = RandomIC
-    # variable = porosity
-    # min = 0.1
-    # max = 0.2
-    # #block = 'host'
   []
   [dike_temperature]
     type = ConstantIC
@@ -327,26 +280,13 @@
 []
 
 [Functions]
-  [dike_cooling]
-      type = ParsedFunction
-      expression = '785'
-    []
   [ppfunc]
     type = ParsedFunction
-    expression ='1.0135e5+(1500)*9.81*1000+(1500-y)*1000*9.81' #1.0135e5-(y)*9.81*1000' #hydrostatic gradientose   + atmospheric pressure in Pa
+    expression ='1.0135e5+(${depthAtTop})*9.81*1000+(${depthAtTop}-y)*1000*9.81' #1.0135e5-(y)*9.81*1000' #hydrostatic gradientose   + atmospheric pressure in Pa
   []
   [tfunc]
     type = ParsedFunction
-    expression = '300+(1500-y)*10/1000' #285+(-y)*10/1000 # geothermal 10 C per kilometer in kelvin
-  []
-  [dike_pressure]
-    type = ParsedFunction
-    expression = '1.0135e6 + (1500-y)*1000*9.81'  #hydrostatic gradientose   + atmospheric pressure in Pa
-  []
-  [kfunc]
-    type = PiecewiseLinear
-    x = '0 600 900 1600'
-    y = '10e-13 10e-13 10e-18 10e-20'
+    expression = '285+${depthAtTop}*${geotherm}+(${L}-y)*${geotherm}' #285+(-y)*10/1000 # geothermal 10 C per kilometer in kelvin
   []
 []
 
@@ -461,15 +401,6 @@
     type = PorousFlowThermalConductivityIdeal
     dry_thermal_conductivity = '3 0 0  0 3 0  0 0 3' # too high per noah W/mK
   []
-  [parsed_thermal_conductivity]
-    type = ParsedMaterial
-    property_name = dike_thermal_conductivity
-    constant_names = 'kw k'
-    constant_expressions = '3 0.1'
-    coupled_variables = 'porosity'
-    expression = 'kw*porosity + k*(1-porosity)'
-  []
-
 []
 
 [BCs]
@@ -579,27 +510,27 @@
   [flowx_bc]
     type = SideAverageValue
     variable = water_darcy_vel_x
-    boundary = 'host_edge'
+    boundary = 'interface'
   []
   [flowy_bc]
     type = SideAverageValue
     variable = water_darcy_vel_y
-    boundary = 'host_edge'
+    boundary = 'interface'
   []
   [enthalpy_bc]
     type = SideAverageValue
     variable = enthalpy
-    boundary = 'host_edge'
+    boundary = 'interface'
   []
   [permExp_bc]
     type = SideAverageValue
     variable = permExp
-    boundary = 'host_edge'
+    boundary = 'interface'
   []
   [perm]
     type = SideAverageValue
     variable = perm
-    boundary = 'host_edge'
+    boundary = 'interface'
   []
   [Residual]
     type = Residual
