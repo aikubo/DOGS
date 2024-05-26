@@ -16,7 +16,7 @@
   []
 []
 
-[Materials]
+[Materials]:q_dike
   [permeability]
     type = PorousFlowPermeabilityConstFromVar
     perm_xx = 'perm'
@@ -35,3 +35,4 @@
     reporters = 'T_host_avg/value T_dike_avg/value q_dike/value'
   []
 []
+
