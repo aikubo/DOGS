@@ -28,7 +28,7 @@
     type = SamplerFullSolveMultiApp
     sampler = MC
     input_files = 'constantpermAMRTest.i'
-    mode = normal
+    mode = batch-reset
     ignore_solve_not_converge = true
 
   []

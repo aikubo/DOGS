@@ -16,7 +16,7 @@
   []
 []
 
-[Materials]:q_dike
+[Materials]
   [permeability]
     type = PorousFlowPermeabilityConstFromVar
     perm_xx = 'perm'
