@@ -4,7 +4,7 @@
 [Distributions]
   [klow]
     type = Uniform
-    lower_bound = -22
+    lower_bound = -25
     upper_bound = -18
   []
   [khigh]
@@ -14,20 +14,20 @@
   []
   [Tlow]
     type = Uniform
-    lower_bound = 300
-    upper_bound = 400
+    lower_bound = 200
+    upper_bound = 500
   []
   [Thigh]
     type = Uniform
-    lower_bound = 800
-    upper_bound = 900
+    lower_bound = 650
+    upper_bound = 1400
   []
 []
 
 [Samplers]
     [MC]
       type = MonteCarlo
-      num_rows = 10
+      num_rows = 35
       distributions = 'klow khigh Tlow Thigh'
       execute_on = INITIAL # create random numbers on initial and use them for each timestep
     []
@@ -38,9 +38,8 @@
     type = SamplerFullSolveMultiApp
     sampler = MC
     input_files = 'loglinTest.i'
-    mode = batch-restore
+    mode = normal
     ignore_solve_not_converge = true
-
   []
 []
 
@@ -56,7 +55,7 @@
     from_multi_app = runner
     sampler = MC
     stochastic_reporter = results
-    from_reporter = 'T_host_avg/value T_dike_avg/value q_dike/value permExp/value T_vec/T'
+    from_reporter = 'T_host_avg/value T_dike_avg/value q_dike/value perm/value T_vec_near/T T_vec_far/T'
   []
   [results2]
     type = SamplerReporterTransfer
@@ -84,7 +83,7 @@
   []
   [stats]
     type = StatisticsReporter
-    reporters = 'results/results:T_host_avg:value results/results:T_dike_avg:value results/results:q_dike:value results/results:permExp:value results/results:T_vec:T'
+    reporters = 'results/results:T_host_avg:value results/results:T_dike_avg:value results/results:q_dike:value results/results:T_vec_near:T results/results:T_vec_far:T results/results:perm:value'
     compute = 'max mean stddev'
     ci_method = 'percentile'
     ci_levels = '0.05 0.95'

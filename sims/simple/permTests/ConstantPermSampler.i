@@ -25,7 +25,7 @@
 
 [MultiApps]
   [runner]
-    type = SamplerFullSolveMultiApp
+    type = SamplerTransientMultiApp
     sampler = MC
     input_files = 'constantpermAMRTest.i'
     mode = normal
@@ -45,7 +45,7 @@
     from_multi_app = runner
     sampler = MC
     stochastic_reporter = results
-    from_reporter = 'T_host_avg/value T_dike_avg/value q_dike/value T_vec/T perm/value'
+    from_reporter = 'T_host_avg/value T_dike_avg/value q_dike/value perm/value T_vec_near/T T_vec_far/T'
   []
   [results2]
     type = SamplerReporterTransfer
@@ -73,7 +73,7 @@
   []
   [stats]
     type = StatisticsReporter
-    reporters = 'results/results:T_host_avg:value results/results:T_dike_avg:value results/results:q_dike:value results/results:T_vec:T results/results:perm:value'
+    reporters = 'results/results:T_host_avg:value results/results:T_dike_avg:value results/results:q_dike:value results/results:T_vec_near:T results/results:T_vec_far:T results/results:perm:value'
     compute = 'max mean stddev'
     ci_method = 'percentile'
     ci_levels = '0.05 0.95'
@@ -84,6 +84,12 @@
     real_vector_values = '0'
   []
 
+[]
+
+[Executioner]
+  type = Transient
+  end_time = 1e6
+  dt = 1e6
 []
 
 [Outputs]

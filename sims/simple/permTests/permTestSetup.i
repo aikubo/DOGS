@@ -287,15 +287,15 @@ geotherm = '${fparse 10/1000}' #K/m
   dt = 1e6
   line_search = none
   nl_abs_tol = 1e-7
-  dtmin = 1
+  # dtmin = 1
   error_on_dtmin = false
-  steady_state_detection = true
-  steady_state_tolerance = 1e-12
-  verbose = true
-  [TimeStepper]
-    type = IterationAdaptiveDT
-    dt = 1e6
-  []
+  # steady_state_detection = true
+  # steady_state_tolerance = 1e-12
+  # verbose = true
+  # [TimeStepper]
+  #   type = IterationAdaptiveDT
+  #   dt = 1e6
+  # []
 []
 
 [Postprocessors]
@@ -322,12 +322,21 @@ geotherm = '${fparse 10/1000}' #K/m
 []
 
 [VectorPostprocessors]
-  [T_vec]
+  [T_vec_near]
     type = LineValueSampler
     variable = T
     start_point = '0 750 0'
-    end_point = '1500 750 0'
-    num_points = 50
+    end_point = '300 750 0'
+    num_points = 20
+    sort_by = x
+    execute_on = 'initial timestep_end'
+  []
+  [T_vec_far]
+    type = LineValueSampler
+    variable = T
+    start_point = '300 750 0'
+    end_point = '150 750 0'
+    num_points = 10
     sort_by = x
     execute_on = 'initial timestep_end'
   []
