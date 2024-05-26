@@ -242,7 +242,7 @@
   [perm]
     type = ConstantAux
     variable = perm
-    value = 10e-11
+    value = 10e-16
   []
   [pflow_heatflux]
     type = PorousFlowHeatFluxAux
@@ -513,11 +513,13 @@
   # 1.5e9 is 47.5 years
   solve_type = NEWTON # MUCH better than PJFNK
   automatic_scaling = true
-  end_time = 3e9
+  end_time = 9e9
   #dtmax= 6.312e+7
   line_search = none
   nl_abs_tol = 1e-7
   dtmin = 1
+  steady_state_detection = true
+  steady_state_tolerance = 1e-12
   [TimeStepper]
     type = IterationAdaptiveDT
     dt = 1e6
