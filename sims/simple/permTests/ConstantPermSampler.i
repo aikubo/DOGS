@@ -20,10 +20,10 @@
 
 [MultiApps]
   [runner]
-    type = SamplerFullSolveMultiApp
+    type = SamplerTransientMultiApp
     sampler = csv
     input_files = 'constantpermAMRTest.i'
-    mode = batch-restore
+    mode = normal
   []
 []
 
