@@ -1,79 +1,46 @@
 # log linear perm relationship
+depthAtTop = 1500 #m
+L = 1000 #m
+W = 100 #m
+
+nx = 20
+ny = 20
+
+geotherm = '${fparse 10/1000}' #K/m
 
 [Mesh]
   [gen]
     type = GeneratedMeshGenerator
     dim = 2
-    nx = 20
-    ny = 20
-    xmin = 0
-    xmax = 1500
-    ymax = 1500
+    nx = ${nx}
+    ny = ${ny}
+    xmin= 0
+    xmax = '${fparse L*2}'
     ymin = 0
-    #bias_x = 1.25
+    ymax = ${L}
   []
-  [dike]
+  [cutout]
     type = SubdomainBoundingBoxGenerator
     input = gen
     block_id = 1
-    bottom_left = ' 0 0 0'
-    top_right = ' 50 1200 0'
+    bottom_left = '0 0 0'
+    top_right = '${W} ${L} 0'
   []
   [rename]
     type = RenameBlockGenerator
-    input = dike
+    input = cutout
     old_block = '0 1'
     new_block = 'host dike'
   []
-  [sidesets]
-    type = SideSetsAroundSubdomainGenerator
-    input = rename
-    block = 'dike'
-    new_boundary = 'dike_center'
-    normal = '-1 0 0'
-  []
-  [sidesets2]
-    type = SideSetsAroundSubdomainGenerator
-    input = sidesets
-    block = 'dike'
-    new_boundary = 'dike_edge_R'
-    normal = '1 0 0'
-  []
-  [sidesets3]
-    type = SideSetsAroundSubdomainGenerator
-    input = sidesets2
-    block = 'dike'
-    new_boundary = 'dike_edge_top'
-    normal = '0 1 0'
-  []
-  [sidesets4]
-    type = SideSetsAroundSubdomainGenerator
-    input = sidesets3
-    block = 'host'
-    new_boundary = 'host_bottom'
-    normal = '0 -1 0'
-  []
-  [sidesets5]
-    type = SideSetsAroundSubdomainGenerator
-    input = sidesets4
-    block = 'host'
-    new_boundary = 'host_left'
-    normal = '-1 0 0'
-  []
-  [sidesets6]
-    type = RenameBoundaryGenerator
-    input = sidesets5
-    old_boundary = 'dike_edge_R dike_edge_top'
-    new_boundary = 'dike_edge dike_edge'
-  []
-  [SideSetsBetweenSubdomainsGenerator]
-    type = SideSetsBetweenSubdomainsGenerator
-    input = sidesets6
-    primary_block= 'host'
-    paired_block = 'dike'
-    new_boundary = 'host_edge'
+  [between]
+   type = SideSetsBetweenSubdomainsGenerator
+   input = rename
+   primary_block = 'host'
+   paired_block = 'dike'
+   new_boundary = interface
   []
 []
+
 
 [Adaptivity]
   max_h_level = 2
@@ -260,7 +227,7 @@
     variable = diffT
     component = normal
     diffusion_variable = T
-    boundary = 'dike_edge host_edge'
+    boundary = 'interface'
     check_boundary_restricted = false
   []
 []
@@ -301,27 +268,14 @@
 []
 
 [Functions]
-  [dike_cooling]
+    [ppfunc]
       type = ParsedFunction
-      expression = '785'
+      expression ='1.0135e5+(${depthAtTop})*9.81*1000+(${depthAtTop}-y)*1000*9.81' #1.0135e5-(y)*9.81*1000' #hydrostatic gradientose   + atmospheric pressure in Pa
     []
-  [ppfunc]
-    type = ParsedFunction
-    expression ='1.0135e5+(1500)*9.81*1000+(1500-y)*1000*9.81' #1.0135e5-(y)*9.81*1000' #hydrostatic gradientose   + atmospheric pressure in Pa
-  []
-  [tfunc]
-    type = ParsedFunction
-    expression = '300+(1500-y)*10/1000' #285+(-y)*10/1000 # geothermal 10 C per kilometer in kelvin
-  []
-  [dike_pressure]
-    type = ParsedFunction
-    expression = '1.0135e6 + (1500-y)*1000*9.81'  #hydrostatic gradientose   + atmospheric pressure in Pa
-  []
-  [kfunc]
-    type = PiecewiseLinear
-    x = '0 600 900 1600'
-    y = '10e-13 10e-13 10e-18 10e-20'
-  []
+    [tfunc]
+      type = ParsedFunction
+      expression = '285+${depthAtTop}*${geotherm}+(${L}-y)*${geotherm}' #285+(-y)*10/1000 # geothermal 10 C per kilometer in kelvin
+    []
 []
 
 [Kernels]
@@ -430,6 +384,13 @@
     type = PorousFlowMatrixInternalEnergy
     density = 2400
     specific_heat_capacity = 790
+    block = 'host'
+  []
+  [Matrix_internal_energy2]
+    type = PorousFlowMatrixInternalEnergy
+    density = 300
+    specific_heat_capacity = 1100
+    block = 'dike'
   []
   [thermal_conductivity]
     type = PorousFlowThermalConductivityIdeal
@@ -513,7 +474,7 @@
   # 1.5e9 is 47.5 years
   solve_type = NEWTON # MUCH better than PJFNK
   automatic_scaling = true
-  end_time = 9e9
+  end_time = 13e9
   #dtmax= 6.312e+7
   line_search = none
   nl_abs_tol = 1e-7
@@ -558,7 +519,7 @@
   [q_dike]
     type = SideDiffusiveFluxAverage
     variable = 'T'
-    boundary = 'host_edge'
+    boundary = 'interface'
     diffusivity = 'dike_thermal_conductivity'
   []
 []
@@ -569,7 +530,7 @@
     variable = T
     start_point = '0 750 0'
     end_point = '1500 750 0'
-    num_points = 10
+    num_points = 50
     sort_by = x
     execute_on = 'initial timestep_end'
   []
