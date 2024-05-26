@@ -35,10 +35,10 @@
 
 [MultiApps]
   [runner]
-    type = SamplerFullSolveMultiApp
+    type = SamplerTransientMultiApp
     sampler = MC
     input_files = 'loglinTest.i'
-    mode = batch-restore
+    mode = normal
   []
 []
 
