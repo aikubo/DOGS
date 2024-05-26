@@ -133,8 +133,4 @@
     type = ElementAverageValue
     variable = permExp
   []
-  [perm]
-    type = ElementAverageValue
-    variable = perm
-  []
 []

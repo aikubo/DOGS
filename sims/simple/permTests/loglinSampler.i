@@ -27,7 +27,7 @@
 [Samplers]
     [MC]
       type = MonteCarlo
-      num_rows = 35
+      num_rows = 25
       distributions = 'klow khigh Tlow Thigh'
       execute_on = INITIAL # create random numbers on initial and use them for each timestep
     []
@@ -35,11 +35,10 @@
 
 [MultiApps]
   [runner]
-    type = SamplerFullSolveMultiApp
+    type = SamplerTransientMultiApp
     sampler = MC
     input_files = 'loglinTest.i'
     mode = normal
-    ignore_solve_not_converge = true
   []
 []
 
@@ -48,7 +47,7 @@
     type = SamplerParameterTransfer
     to_multi_app = runner
     sampler = MC
-    parameters = 'klow khigh Tlow Thigh'
+    parameters = 'AuxKernels/klow/value AuxKernels/khigh/value AuxKernels/Tlow/value AuxKernels/Thigh/value'
   []
   [results]
     type = SamplerReporterTransfer
@@ -57,29 +56,18 @@
     stochastic_reporter = results
     from_reporter = 'T_host_avg/value T_dike_avg/value q_dike/value perm/value T_vec_near/T T_vec_far/T'
   []
-  [results2]
-    type = SamplerReporterTransfer
-    from_multi_app = runner
-    sampler = csv
-    stochastic_reporter = results2
-    from_reporter = 'acc/T_host_avg:value acc/T_dike_avg:value acc/q_dike:value acc/permExp:value'
-  []
   [x_transfer]
     type = MultiAppReporterTransfer
     from_multi_app = runner
     subapp_index = 0
-    from_reporters = T_vec/x
-    to_reporters = const/x
+    from_reporters = 'T_vec_near/x T_vec_far/x'
+    to_reporters = 'nearx/x farx/x'
   []
 []
 
 [Reporters]
   [results]
     type = StochasticReporter
-  []
-  [results2]
-    type = StochasticReporter
-    output = none
   []
   [stats]
     type = StatisticsReporter
@@ -88,16 +76,29 @@
     ci_method = 'percentile'
     ci_levels = '0.05 0.95'
   []
-  [const]
+  [nearx]
+    type = ConstantReporter
+    real_vector_names = 'x'
+    real_vector_values = '0'
+  []
+  [farx]
     type = ConstantReporter
     real_vector_names = 'x'
     real_vector_values = '0'
   []
 []
 
+[Executioner]
+  type = Transient
+  end_time = 3e6
+  dt = 1e6
+[]
+
 [Outputs]
-  execute_on = 'FINAL'
+  execute_on = 'timestep_end'
+  interval = 1
   [out]
     type = JSON
   []
 []
+
