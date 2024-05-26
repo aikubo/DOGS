@@ -1,12 +1,11 @@
 # log linear perm relationship
-permInput = 1e-13
 
 [Mesh]
   [gen]
     type = GeneratedMeshGenerator
     dim = 2
-    nx = 200
-    ny = 200
+    nx = 20
+    ny = 20
     xmin = 0
     xmax = 1500
     ymax = 1500
@@ -239,12 +238,11 @@ permInput = 1e-13
     variable = enthalpy
     property = enthalpy
     execute_on = 'initial timestep_end'
-
   []
   [perm]
     type = ConstantAux
     variable = perm
-    value = 10e-13
+    value = 10e-11
   []
   [pflow_heatflux]
     type = PorousFlowHeatFluxAux
@@ -274,12 +272,6 @@ permInput = 1e-13
     function = ppfunc
    # block = 'host'
   []
-  # [dike_pp]
-  #   type = FunctionIC
-  #   variable = porepressure
-  #   function = dike_pressure
-  #   block = 'dike'
-  # []
   [geothermal]
     type = FunctionIC
     variable = T
@@ -290,11 +282,6 @@ permInput = 1e-13
     type = ConstantIC
     variable = porosity
     value = 0.2
-    # type = RandomIC
-    # variable = porosity
-    # min = 0.1
-    # max = 0.2
-    # #block = 'host'
   []
   [dike_temperature]
     type = ConstantIC
@@ -529,7 +516,7 @@ permInput = 1e-13
   end_time = 3e9
   #dtmax= 6.312e+7
   line_search = none
-  nl_abs_tol = 1e-9
+  nl_abs_tol = 1e-7
   dtmin = 1
   [TimeStepper]
     type = IterationAdaptiveDT
@@ -551,6 +538,8 @@ permInput = 1e-13
   #   type = CSV
   #   file_base = ./visuals/loglinearpermAMR
   # []
+  exodus = true
+  csv = true
 []
 
 [Postprocessors]

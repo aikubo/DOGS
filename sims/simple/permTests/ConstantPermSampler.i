@@ -4,8 +4,8 @@
 [Distributions]
   [k]
     type = Uniform
-    lower_bound = 10e-10
-    upper_bound = 10e-15
+    lower_bound = 10e-12
+    upper_bound = 10e-16
   []
 []
 
