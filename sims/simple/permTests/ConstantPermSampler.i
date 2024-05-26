@@ -25,7 +25,7 @@
 
 [MultiApps]
   [runner]
-    type = SamplerTransientMultiApp
+    type = SamplerFullSolveMultiApp
     sampler = MC
     input_files = 'constantpermAMRTest.i'
     mode = normal

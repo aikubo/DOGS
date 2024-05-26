@@ -284,18 +284,17 @@ geotherm = '${fparse 10/1000}' #K/m
   automatic_scaling = true
   end_time = 3e9
   dt = 1e6
-  # #dtmax= 6.312e+7
-  # line_search = none
-  # nl_abs_tol = 1e-7
-  # dtmin = 1
-  # error_on_dtmin = false
-  # steady_state_detection = true
-  # steady_state_tolerance = 1e-12
-  # verbose = true
-  # [TimeStepper]
-  #   type = IterationAdaptiveDT
-  #   dt = 1e6
-  # []
+  line_search = none
+  nl_abs_tol = 1e-7
+  dtmin = 1
+  error_on_dtmin = false
+  steady_state_detection = true
+  steady_state_tolerance = 1e-12
+  verbose = true
+  [TimeStepper]
+    type = IterationAdaptiveDT
+    dt = 1e6
+  []
 []
 
 [Postprocessors]
