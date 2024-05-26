@@ -11,7 +11,7 @@
 
 [Samplers]
   [csv]
-    type = MCSampler
+    type = CSVSampler
     samples_file = 'samplescsv'
     column_names = 'k'
   []
