@@ -4,7 +4,7 @@
 [Distributions]
   [k]
     type = Uniform
-    lower_bound = 10e-16
+    lower_bound = 10e-17
     upper_bound = 10e-11
   []
 []
@@ -12,24 +12,18 @@
 [Samplers]
   [csv]
     type = CSVSampler
-    samples_file = 'samplescsv'
+    samples_file = 'samples'
     column_names = 'k'
-  []
-  [MC]
-    type = MonteCarlo
-    num_rows = 20
-    distributions = 'k'
-    execute_on = INITIAL # create random numbers on initial and use them for each timestep
   []
 []
 
 [MultiApps]
   [runner]
     type = SamplerTransientMultiApp
-    sampler = MC
+    sampler = csv
     input_files = 'constantpermAMRTest.i'
     mode = normal
-    ignore_solve_not_converge = true
+    #ignore_solve_not_converge = true
   []
 []
 
@@ -37,20 +31,20 @@
   [parameters]
     type = SamplerParameterTransfer
     to_multi_app = runner
-    sampler = MC
+    sampler = csv
     parameters = 'AuxKernels/perm/value'
   []
   [results]
     type = SamplerReporterTransfer
     from_multi_app = runner
-    sampler = MC
+    sampler = csv
     stochastic_reporter = results
     from_reporter = 'T_host_avg/value T_dike_avg/value q_dike/value perm/value T_vec_near/T T_vec_far/T'
   []
   [results2]
     type = SamplerReporterTransfer
     from_multi_app = runner
-    sampler = MC
+    sampler = csv
     stochastic_reporter = results2
     from_reporter = 'acc/T_host_avg:value acc/T_dike_avg:value acc/q_dike:value'
   []
@@ -58,8 +52,8 @@
     type = MultiAppReporterTransfer
     from_multi_app = runner
     subapp_index = 0
-    from_reporters = T_vec/x
-    to_reporters = const/x
+    from_reporters = 'T_vec_near/x T_vec_far/x'
+    to_reporters = 'nearx/x farx/x'
   []
 []
 
@@ -78,7 +72,12 @@
     ci_method = 'percentile'
     ci_levels = '0.05 0.95'
   []
-  [const]
+  [nearx]
+    type = ConstantReporter
+    real_vector_names = 'x'
+    real_vector_values = '0'
+  []
+  [farx]
     type = ConstantReporter
     real_vector_names = 'x'
     real_vector_values = '0'
@@ -88,12 +87,13 @@
 
 [Executioner]
   type = Transient
-  end_time = 1e6
+  end_time = 3e9
   dt = 1e6
 []
 
 [Outputs]
-  execute_on = 'FINAL'
+  execute_on = 'timestep_end'
+  interval = 600
   [out]
     type = JSON
   []
