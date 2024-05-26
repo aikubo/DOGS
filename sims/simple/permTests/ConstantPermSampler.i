@@ -65,7 +65,7 @@
   []
   [results2]
     type = StochasticReporter
-    output = none
+    outputs = none
   []
   [stats]
     type = StatisticsReporter

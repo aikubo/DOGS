@@ -56,7 +56,14 @@
     from_multi_app = runner
     sampler = MC
     stochastic_reporter = results
-    from_reporter = 'T_host_avg/value T_dike_avg/value q_dike/value T_vec/T'
+    from_reporter = 'T_host_avg/value T_dike_avg/value q_dike/value permExp/value T_vec/T'
+  []
+  [results2]
+    type = SamplerReporterTransfer
+    from_multi_app = runner
+    sampler = csv
+    stochastic_reporter = results2
+    from_reporter = 'acc/T_host_avg:value acc/T_dike_avg:value acc/q_dike:value acc/permExp:value'
   []
   [x_transfer]
     type = MultiAppReporterTransfer
@@ -71,9 +78,13 @@
   [results]
     type = StochasticReporter
   []
+  [results2]
+    type = StochasticReporter
+    output = none
+  []
   [stats]
     type = StatisticsReporter
-    reporters = 'results/results:T_host_avg:value results/results:T_dike_avg:value results/results:q_dike:value results/results:T_vec:T'
+    reporters = 'results/results:T_host_avg:value results/results:T_dike_avg:value results/results:q_dike:value results/results:permExp:value results/results:T_vec:T'
     compute = 'max mean stddev'
     ci_method = 'percentile'
     ci_levels = '0.05 0.95'
