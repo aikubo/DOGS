@@ -10,18 +10,23 @@
 []
 
 [Samplers]
-  [csv]
-    type = CSVSampler
+  [MC]
+    type = MCSampler
     samples_file = 'samplescsv'
     column_names = 'k'
-    execute_on = 'initial timestep_end'
+  []
+  [MC]
+    type = MonteCarlo
+    num_rows = 10
+    distributions = 'k'
+    execute_on = INITIAL # create random numbers on initial and use them for each timestep
   []
 []
 
 [MultiApps]
   [runner]
     type = SamplerFullSolveMultiApp
-    sampler = csv
+    sampler = MC
     input_files = 'constantpermAMRTest.i'
     mode = normal
     ignore_solve_not_converge = true
@@ -33,20 +38,20 @@
   [parameters]
     type = SamplerParameterTransfer
     to_multi_app = runner
-    sampler = csv
+    sampler = MC
     parameters = 'AuxKernels/perm/value'
   []
   [results]
     type = SamplerReporterTransfer
     from_multi_app = runner
-    sampler = csv
+    sampler = MC
     stochastic_reporter = results
     from_reporter = 'T_host_avg/value T_dike_avg/value q_dike/value T_vec/T'
   []
   [results2]
     type = SamplerReporterTransfer
     from_multi_app = runner
-    sampler = csv
+    sampler = MC
     stochastic_reporter = results2
     from_reporter = 'acc/T_host_avg:value acc/T_dike_avg:value acc/q_dike:value'
   []
