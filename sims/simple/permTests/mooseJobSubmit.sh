@@ -23,6 +23,8 @@ fi
 echo "opt file exists, continuing..."
 # Your script continues here...
 
+# remove old files
+rm $job_name*.out
 # Create a batch script for the job
 batch_file="${job_name}.sh"
 cat > "$batch_file" <<EOF
