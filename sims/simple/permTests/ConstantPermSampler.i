@@ -43,6 +43,13 @@
     stochastic_reporter = results
     from_reporter = 'T_host_avg/value T_dike_avg/value q_dike/value T_vec/T'
   []
+  [results2]
+    type = SamplerReporterTransfer
+    from_multi_app = runner
+    sampler = csv
+    stochastic_reporter = results2
+    from_reporter = 'acc/T_host_avg:value acc/T_dike_avg:value acc/q_dike:value'
+  []
   [x_transfer]
     type = MultiAppReporterTransfer
     from_multi_app = runner
@@ -56,6 +63,10 @@
   [results]
     type = StochasticReporter
   []
+  [results2]
+    type = StochasticReporter
+    output = none
+  []
   [stats]
     type = StatisticsReporter
     reporters = 'results/results:T_host_avg:value results/results:T_dike_avg:value results/results:q_dike:value results/results:T_vec:T'
@@ -68,6 +79,7 @@
     real_vector_names = 'x'
     real_vector_values = '0'
   []
+
 []
 
 [Outputs]

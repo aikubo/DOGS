@@ -28,3 +28,10 @@
 [Controls/stochastic]
   type = SamplerReceiver
 []
+
+[Reporters]
+  [acc]
+    type = AccumulateReporter
+    reporters = 'T_host_avg/value T_dike_avg/value q_dike/value'
+  []
+[]
