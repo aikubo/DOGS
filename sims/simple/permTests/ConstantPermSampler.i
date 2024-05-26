@@ -10,7 +10,7 @@
 []
 
 [Samplers]
-  [MC]
+  [csv]
     type = MCSampler
     samples_file = 'samplescsv'
     column_names = 'k'
