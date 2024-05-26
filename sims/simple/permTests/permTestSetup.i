@@ -287,6 +287,7 @@ geotherm = '${fparse 10/1000}' #K/m
   line_search = none
   nl_abs_tol = 1e-7
   dtmin = 1
+  error_on_dtmin = false
   steady_state_detection = true
   steady_state_tolerance = 1e-12
   [TimeStepper]
