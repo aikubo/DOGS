@@ -12,7 +12,7 @@
 [Samplers]
   [csv]
     type = CSVSampler
-    samples_file = 'samples.csv'
+    samples_file = 'samplescsv'
     column_names = 'k'
     execute_on = 'initial timestep_end'
   []
