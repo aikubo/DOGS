@@ -35,7 +35,7 @@ cat > "$batch_file" <<EOF
 #SBATCH --output=%x_%j.out
 #SBATCH --time=24:00:00  # Job time, e.g., 1 hour
 #SBATCH --nodes=1        # Number of nodes
-#SBATCH --ntasks=4       # Number of tasks (MPI processes)
+#SBATCH --ntasks=8       # Number of tasks (MPI processes)
 #SBATCH --cpus-per-task=1  # Number of cores per task
 #SBATCH --mem=4G         # Memory per node
 #SBATCH --account=karlstrom
@@ -48,7 +48,7 @@ module load cmake/3.26.3
 export PYTHONPATH=$PYTHONPATH:/projects/karlstrom/shared/moose_projects/moose/python
 export MOOSE_DIR=/projects/karlstrom/shared/moose_projects/moose
 
-mpiexec -n 4 $file_path -i $input_file
+mpiexec -n 8 $file_path -i $input_file
 EOF
 
 # Submit the job

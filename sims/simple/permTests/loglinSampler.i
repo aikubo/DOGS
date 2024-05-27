@@ -27,7 +27,7 @@
 [Samplers]
     [MC]
       type = MonteCarlo
-      num_rows = 25
+      num_rows = 50
       distributions = 'klow khigh Tlow Thigh'
       execute_on = INITIAL # create random numbers on initial and use them for each timestep
     []
@@ -90,7 +90,7 @@
 
 [Executioner]
   type = Transient
-  end_time = 3e6
+  end_time = 3e9
   dt = 1e6
 []
 
