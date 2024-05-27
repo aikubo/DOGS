@@ -100,7 +100,7 @@
 
 [Executioner]
   type = Transient
-  end_time = 3e6
+  end_time = 1.5e9
   dt = 1e6
 []
 

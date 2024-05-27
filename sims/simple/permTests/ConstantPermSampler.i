@@ -11,9 +11,8 @@
 
 [Samplers]
   [csv]
-    type = CSVSampler
-    samples_file = 'samples'
-    column_names = 'k'
+    type = InputMatrix
+    matrix = "10e-11; 10e-12; 10e-13; 10e-14; 10e-15; 10e-16"
   []
 []
 
@@ -23,7 +22,6 @@
     sampler = csv
     input_files = 'constantpermAMRTest.i'
     mode = normal
-    #ignore_solve_not_converge = true
   []
 []
 
@@ -88,13 +86,14 @@
 [Executioner]
   type = Transient
   end_time = 3e9
-  dt = 1e6
+  dt = 7.889e6
 []
 
 [Outputs]
   execute_on = 'timestep_end'
-  interval = 600
+  interval = 4
   [out]
     type = JSON
   []
+  csv=true
 []
