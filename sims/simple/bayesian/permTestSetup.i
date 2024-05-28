@@ -1,7 +1,6 @@
 depthAtTop = 1500 #m
 L = 1000 #m
-W = 50 #m
-Ld = 700
+W = 100 #m
 
 nx = 50
 ny = 50
@@ -25,7 +24,7 @@ geotherm = '${fparse 10/1000}' #K/m
     input = gen
     block_id = 1
     bottom_left = '0 0 0'
-    top_right = '${W} ${Ld} 0'
+    top_right = '${W} ${L} 0'
   []
   [rename]
     type = RenameBlockGenerator
@@ -76,15 +75,7 @@ geotherm = '${fparse 10/1000}' #K/m
     family = MONOMIAL
     order = CONSTANT
   []
-  [AreaAboveBackground]
-    family = MONOMIAL
-    order = CONSTANT
-  []
-  [geotherm]
-    family = MONOMIAL
-    order = CONSTANT
-  []
-  []
+[]
 
 [AuxKernels]
   [darcy_vel_x_kernel]
@@ -98,18 +89,6 @@ geotherm = '${fparse 10/1000}' #K/m
     component = y
     variable = darcy_vely
     fluid_phase = 0
-  []
-  [geotherm]
-    type = FunctionAux
-    variable = geotherm
-    function = tfunc
-    execute_on = 'initial'
-  []
-  [AreaAboveBackground]
-    type = ParsedAux
-    variable = AreaAboveBackground
-    coupled_variables = 'geotherm T'
-    expression = 'if(T>geotherm,1,0)'
   []
 []
 
@@ -177,13 +156,13 @@ geotherm = '${fparse 10/1000}' #K/m
   [right]
     type = FunctionDirichletBC
     variable = T
-    boundary = 'right bottom top left'
+    boundary = 'right bottom top interface'
     function = tfunc
   []
   [NeumannBC]
     type = NeumannBC
     variable = porepressure
-    boundary = 'right top bottom left'
+    boundary = 'right top bottom interface'
     value = 0
   []
 
@@ -305,7 +284,7 @@ geotherm = '${fparse 10/1000}' #K/m
   solve_type = NEWTON # MUCH better than PJFNK
   automatic_scaling = true
   end_time = 3e9
-  dt = 2e6
+  dt = 1e6
   line_search = none
   nl_abs_tol = 1e-7
   # dtmin = 1
@@ -320,36 +299,10 @@ geotherm = '${fparse 10/1000}' #K/m
 []
 
 [Postprocessors]
-  [T_host_max]
-    type = ElementExtremeValue
-    variable = 'T'
-    block = 'host'
-  []
   [T_host_avg]
     type = ElementAverageValue
     variable = 'T'
     block = 'host'
-  []
-  [T_dike_max]
-    type = ElementExtremeValue
-    variable = 'T'
-    block = 'dike'
-  []
-  [vel_x_avg]
-    type = ElementAverageValue
-    variable = 'darcy_velx'
-  []
-  [vel_y_avg]
-    type = ElementAverageValue
-    variable = 'darcy_vely'
-  []
-  [vel_x_max]
-    type = ElementExtremeValue
-    variable = 'darcy_velx'
-  []
-  [vel_y_max]
-    type = ElementExtremeValue
-    variable = 'darcy_vely'
   []
   [T_dike_avg]
     type = ElementAverageValue
@@ -357,27 +310,15 @@ geotherm = '${fparse 10/1000}' #K/m
     block = 'dike'
   []
   [q_dike]
-    type = SideDiffusiveFluxIntegral
+    type = SideDiffusiveFluxAverage
     variable = 'T'
     boundary = 'interface'
-    diffusivity = '3'
-  []
-  [q_top]
-    type = SideDiffusiveFluxIntegral
-    variable = 'T'
-    boundary = 'top'
-    diffusivity = '3'
+    diffusivity = '4'
   []
   [perm]
     type = ElementAverageValue
     variable = 'perm'
   []
-  [AreaAboveBackgroundSum]
-    type = ElementIntegralVariablePostprocessor
-    variable = 'AreaAboveBackground'
-    block = 'host'
-  []
-
 []
 
 [VectorPostprocessors]

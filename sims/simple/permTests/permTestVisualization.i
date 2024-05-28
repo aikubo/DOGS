@@ -28,7 +28,7 @@
     [initial]
       type = BoxMarker
       bottom_left = '0 0 0'
-      top_right = '500 1100 0'
+      top_right = '500 1000 0'
       inside = REFINE
       outside = DO_NOTHING
     []
@@ -39,8 +39,9 @@
   [perm]
     type = ConstantAux
     variable = perm
-    value = 10e-14
+    value = 10e-13
   []
+
 []
 
 [Materials]
