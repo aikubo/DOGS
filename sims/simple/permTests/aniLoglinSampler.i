@@ -35,12 +35,14 @@
 []
 
 [Samplers]
-    [MC]
-      type = MonteCarlo
-      num_rows = 25
-      distributions = 'klow khigh Tlow Thigh'
-      execute_on = INITIAL # create random numbers on initial and use them for each timestep
-    []
+  [MC]
+    type = InputMatrix
+    # klow khigh Tlow Thigh
+    matrix = '-18 -13 300 1000 1
+              -18 -13 600 1000 1.5
+              -20 -15 300 1000 1
+              -20 -15 600 1000 1.5'
+  []
 []
 
 [MultiApps]
@@ -57,7 +59,7 @@
     type = SamplerParameterTransfer
     to_multi_app = runner
     sampler = MC
-    parameters = 'AuxKernels/klow/value AuxKernels/khigh/value AuxKernels/Tlow/value AuxKernels/Thigh/value'
+    parameters = 'AuxKernels/klow/value AuxKernels/khigh/value AuxKernels/Tlow/value AuxKernels/Thigh/value AuxKernels/anifactor/value AuxKernels/Tfracture/value'
   []
   [results]
     type = SamplerReporterTransfer

@@ -26,10 +26,14 @@
 
 [Samplers]
     [MC]
-      type = MonteCarlo
-      num_rows = 50
-      distributions = 'klow khigh Tlow Thigh'
-      execute_on = INITIAL # create random numbers on initial and use them for each timestep
+      type = InputMatrix
+      # klow khigh Tlow Thigh
+      matrix = '-18 -13 300 1000
+                -18 -13 600 1000
+                -20 -15 300 1000
+                -20 -15 600 1000
+                -18 -13 800 1000
+                -18 -13 300 1200'
     []
 []
 

@@ -41,11 +41,11 @@
     family = MONOMIAL
     order = CONSTANT
   []
-  [anifactor]
+  [anipermy]
     family = MONOMIAL
     order = CONSTANT
   []
-  [Tfracture]
+  [anifactor]
     family = MONOMIAL
     order = CONSTANT
   []
@@ -80,12 +80,6 @@
     type = ConstantAux
     variable = anifactor
     value = 1
-    execute_on = 'initial'
-  []
-  [Tfracture]
-    type = ConstantAux
-    variable = Tfracture
-    value = 1438
     execute_on = 'initial'
   []
   [m]
@@ -128,8 +122,20 @@
   [permx]
     type = ParsedAux
     variable = anipermx
-    coupled_variables = 'perm Tfracture'
-    expression = 'if(T>Tfracture, perm*10^anifactor, perm)'
+    coupled_variables = 'perm anifactor'
+    use_xyzt = true
+    constant_names = 'Ld'
+    constant_expressions = '${fparse Ld}'
+    expression = 'if(y<Ld,perm*10^(anifactor), perm)'
+  []
+  [permy]
+    type = ParsedAux
+    variable = anipermy
+    coupled_variables = 'perm anifactor'
+    constant_names = 'W'
+    constant_expressions = '${fparse W}'
+    use_xyzt = true
+    expression = 'if(x<W, perm*10^(anifactor),perm)'
   []
 []
 
@@ -137,7 +143,7 @@
   [permeability]
     type = PorousFlowPermeabilityConstFromVar
     perm_xx = 'anipermx'
-    perm_yy = 'perm'
+    perm_yy = 'anipermy'
     perm_zz = 'perm'
   []
 []
