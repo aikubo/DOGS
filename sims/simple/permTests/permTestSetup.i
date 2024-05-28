@@ -3,8 +3,8 @@ L = 1000 #m
 W = 50 #m
 Ld = 700
 
-nx = 50
-ny = 50
+nx = 20
+ny = 20
 
 geotherm = '${fparse 10/1000}' #K/m
 
@@ -177,15 +177,16 @@ geotherm = '${fparse 10/1000}' #K/m
   [right]
     type = FunctionDirichletBC
     variable = T
-    boundary = 'right bottom top left'
+    boundary = 'right'
     function = tfunc
   []
   [NeumannBC]
     type = NeumannBC
     variable = porepressure
-    boundary = 'right top bottom left'
+    boundary = 'right top bottom'
     value = 0
   []
+
 
 []
 

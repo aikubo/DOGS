@@ -53,7 +53,14 @@
   []
 []
 
+[Executioner]
+  steady_state_detection = true
+  steady_state_tolerance = 1e-14
+[]
+
 [Outputs]
   exodus = true
   csv = true
+  interval = 5
 []
+
