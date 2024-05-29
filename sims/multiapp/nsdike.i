@@ -394,9 +394,6 @@ velocity_interp_method = 'rc'
   end_time = 1e6
   automatic_scaling = true
   line_search = 'none'
-  # petsc_options_iname = '-pc_type -pSc_factor_shift_type'
-  # petsc_options_value = 'lu NONZERO'
-
   solve_type = 'NEWTON'
   petsc_options_iname = '-pc_type -sub_pc_factor_shift_type -ksp_gmres_restart'
   petsc_options_value = ' lu       NONZERO                   200'
@@ -406,7 +403,7 @@ velocity_interp_method = 'rc'
 
   [TimeStepper]
     type = IterationAdaptiveDT
-    dt = 25
+    dt = 1
   []
 []
 

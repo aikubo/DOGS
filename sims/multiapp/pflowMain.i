@@ -15,33 +15,43 @@
     type = TransientMultiApp
     app_type = dikesApp
     input_files = 'nsdikeChild.i'
-    execute_on = 'timestep_begin'
+    sub_cycling = true
   [../]
 []
 
 [Transfers]
-  [./transfer_to_child]
-    type =  MultiAppGeneralFieldShapeEvaluationTransfer
+  [pullTBC]
+  #   type =  MultiAppGeneralFieldShapeEvaluationTransfer
+  #   from_multi_app = child_app
+  #   source_variable = T_child
+  #   variable = T_cutout
+  #   bbox_factor = 1.2
+  #   execute_on = 'timestep_end'
+  # [../]
+    type = MultiAppGeneralFieldUserObjectTransfer
     from_multi_app = child_app
-    source_variable = T_child
+    to_boundaries = 'interface'
+    source_user_object = 'Tbc'
     variable = T_cutout
-    bbox_factor = 1.2
-  [../]
-  [push_qx]
+    bbox_factor = 1.1
+  []
+  [push_kgradT]
     # Transfer from this app to the sub-app
     # which variable from this app?
     # which variable in the sub app?
     type = MultiAppGeneralFieldNearestNodeTransfer
     to_multi_app = child_app
-    source_variable = GradTx
+    source_variable = diffx
     #bbox_factor = 1.2
-    variable = GradTx_from_parent
+    variable = qx_from_parent
+    execute_on = 'initial timestep_begin'
   []
-  [push_cond]
-    type = MultiAppGeneralFieldNearestNodeTransfer
+  [push_q]
+    type = MultiAppPostprocessorTransfer
     to_multi_app = child_app
-    source_variable = k
-    variable = k_from_parent
+    from_postprocessor = qx
+    to_postprocessor = qx_interface
+    execute_on = 'initial timestep_begin'
   []
 []
 
@@ -68,20 +78,20 @@
     variable = GradTx
     gradient_variable = T_parent
     component = x
-    execute_on = 'initial timestep_end'
+    execute_on = 'initial timestep_begin timestep_end'
   []
   [diffx]
     type = ParsedAux
     variable = diffx
     coupled_variables = 'GradTx k'
-    expression = 'k*GradTx'
-    execute_on = 'initial timestep_end'
+    expression = '-k*GradTx'
+    execute_on = 'initial timestep_begin timestep_end'
   []
   [k]
     type = ParsedAux
     variable = k
-    expression = '5'
-    execute_on = 'initial timestep_end'
+    expression = '3'
+    execute_on = 'initial'
   []
 []
 
@@ -95,6 +105,13 @@
   [dtpost]
     type = TimestepSize
     execute_on = TIMESTEP_BEGIN
+  []
+  [qx]
+    type = SideDiffusiveFluxIntegral
+    variable = T_parent
+    boundary = 'interface'
+    diffusivity = '3'
+    execute_on = 'initial timestep_begin timestep_end'
   []
 []
 

@@ -358,7 +358,7 @@ geotherm = '${fparse 10/1000}' #K/m
 []
 
 [Outputs]
-  csv = true
   exodus = true
+  execute_on = 'final'
 []
 

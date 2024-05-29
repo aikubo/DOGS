@@ -201,7 +201,7 @@ geotherm = '${fparse 10/1000}' #K/m
   [NeumannBC]
     type = NeumannBC
     variable = porepressure
-    boundary = 'right top bottom interface'
+    boundary = 'right bottom interface'
     value = 0
   []
 
@@ -323,7 +323,7 @@ geotherm = '${fparse 10/1000}' #K/m
   nl_abs_tol = 1e-9
   nl_rel_tol = 1e-6
   verbose = true
-  dt = 5000
+  dt = 100
 []
 
 [Postprocessors]
@@ -331,10 +331,12 @@ geotherm = '${fparse 10/1000}' #K/m
     type = SideAverageValue
     variable = T_parent
     boundary = 'interface'
+    execute_on = 'initial timestep_end'
   []
   [t_avg]
     type = ElementAverageValue
     variable = T_parent
+    execute_on = 'initial timestep_end'
   []
 []
 
