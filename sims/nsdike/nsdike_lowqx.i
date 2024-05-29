@@ -212,11 +212,16 @@ velocity_interp_method = 'rc'
     pressure = pressure
   []
   [u_friction]
-    type = INSFVMomentumFriction
+    type = PINSFVMomentumFriction
     variable = vel_x
     momentum_component = 'x'
-    linear_coef_name = 'Darcy_coefficient'
-    quadratic_coef_name = 'Forchheimer_coefficient'
+    u = vel_x
+    v = vel_y
+    Darcy_name = 'Darcy_coeff'
+    Forchheimer_name = 'Forchheimer_coeff'
+    rho = ${rho_liquid}
+    mu = ${mu}
+    standard_friction_formulation = false
   []
   [v_time]
     type = INSFVMomentumTimeDerivative
@@ -245,11 +250,16 @@ velocity_interp_method = 'rc'
     pressure = pressure
   []
   [v_friction]
-    type = INSFVMomentumFriction
+    type = PINSFVMomentumFriction
     variable = vel_y
     momentum_component = 'y'
-    linear_coef_name = 'Darcy_coefficient'
-    quadratic_coef_name = 'Forchheimer_coefficient'
+    u = vel_x
+    v = vel_y
+    Darcy_name = 'Darcy_coeff'
+    Forchheimer_name = 'Forchheimer_coeff'
+    rho = ${rho_liquid}
+    mu = ${mu}
+    standard_friction_formulation = false
   []
   [v_gravity]
     type = INSFVMomentumGravity
