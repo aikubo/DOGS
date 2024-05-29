@@ -409,6 +409,11 @@ velocity_interp_method = 'rc'
     rho_l = '${rho_liquid}'
     dendrite_spacing_scaling = 1e-1
   []
+  [friction]
+    type = ADGenericVectorFunctorMaterial
+    prop_names = 'Darcy_coeff Forchheimer_coeff'
+    prop_values = 'darcy_coef darcy_coef darcy_coef fch_coef fch_coef fch_coef'
+  []
   [const_functor]
     type = ADGenericFunctorMaterial
     prop_names = 'alpha_b'
