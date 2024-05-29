@@ -6,6 +6,13 @@
 # units of FVNeumannBC are MT^-2
 # so we need to multiply by the timestep to get the heatflux
 
+# trying to speed up convergence
+# 1. added off_diagonals_in_auto_scaling = true
+# 2. added compute_scaling_once = false
+# 3. added nl_abs_tol = 1e-5
+# 4. INSFVMomentumAdvectionOutflowBC
+# 5. Added SymmetryBC for T
+
 timeUnit = 1 #s
 
 # Fluid properties
@@ -47,6 +54,24 @@ velocity_interp_method = 'rc'
     xmax = 100
     ymin = 0
     ymax = 1000
+  []
+[]
+
+[Adaptivity]
+  max_h_level = 2
+  marker = marker
+  [Indicators]
+    [indicator]
+      type = GradientJumpIndicator
+      variable = T_child
+    []
+  []
+  [Markers]
+    [marker]
+      type = ErrorFractionMarker
+      indicator = indicator
+      refine = 0.8
+    []
   []
 []
 
@@ -268,7 +293,15 @@ velocity_interp_method = 'rc'
     T_solidus = ${T_solidus}
     rho = 'rho_mixture'
   []
+[]
 
+[Functions]
+  [qxdy]
+    type = ParsedFunction
+    symbol_names = 'qmax'
+    symbol_values = '-5000'
+    expression = 'qmax/sqrt(y)*sqrt(1000)'
+  []
 []
 
 [FVBCs]
@@ -326,24 +359,10 @@ velocity_interp_method = 'rc'
     boundary = 'left'
     variable = pressure
   []
-
-  [outlet_u]
-    type = INSFVMomentumAdvectionOutflowBC
-    variable = vel_x
-    u = vel_x
-    v = vel_y
-    boundary = 'top'
-    momentum_component = 'x'
-    rho = rho_mixture
-  []
-  [outlet_v]
-    type = INSFVMomentumAdvectionOutflowBC
-    variable = vel_y
-    u = vel_x
-    v = vel_y
-    boundary = 'top'
-    momentum_component = 'y'
-    rho = rho_mixture
+  [sym_T]
+    type = INSFVSymmetryScalarBC
+    variable = T_child
+    boundary = 'left'
   []
   [outlet_p]
     type = INSFVOutletPressureBC
@@ -351,11 +370,11 @@ velocity_interp_method = 'rc'
     variable = pressure
     function = '${p_outlet}'
   []
-  [cooling_side_single]
+  [cooling_side_low]
     type = FVFunctorNeumannBC
     variable = T_child
     boundary = 'right'
-    functor = '-40000'
+    functor = 'qxdy'
   []
 []
 
@@ -397,10 +416,9 @@ velocity_interp_method = 'rc'
   solve_type = 'NEWTON'
   petsc_options_iname = '-pc_type -sub_pc_factor_shift_type -ksp_gmres_restart'
   petsc_options_value = ' lu       NONZERO                   200'
-  nl_rel_tol = 1e-5
-  nl_abs_tol = 1e-7
-  nl_max_its = 30
-
+  nl_abs_tol = 1e-5
+  off_diagonals_in_auto_scaling = true #helps with convergence
+  compute_scaling_once = false #helps with convergence
   [TimeStepper]
     type = IterationAdaptiveDT
     dt = 1
@@ -425,9 +443,23 @@ velocity_interp_method = 'rc'
     type = ElementAverageValue
     variable = vel_y
   []
+  [density_avg]
+    type = ElementAverageValue
+    variable = density
+  []
+  [meltfraction_avg]
+    type = ElementAverageValue
+    variable = meltfraction
+  []
 []
+
+
 
 [Outputs]
   csv = true
   exodus = true
+[]
+
+[Debug]
+  show_var_residual_norms = true
 []
