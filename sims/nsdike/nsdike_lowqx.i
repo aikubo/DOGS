@@ -48,12 +48,14 @@ velocity_interp_method = 'rc'
   [gen]
     type = GeneratedMeshGenerator
     dim = 2
-    nx = 15
-    ny = 35
+    nx = 100
+    ny = 100
     xmin= 0
     xmax = 100
     ymin = 0
     ymax = 1000
+    bias_y = 1.05
+    bias_x = 0.95
   []
 []
 
@@ -431,12 +433,13 @@ velocity_interp_method = 'rc'
   solve_type = 'NEWTON'
   petsc_options_iname = '-pc_type -sub_pc_factor_shift_type -ksp_gmres_restart'
   petsc_options_value = ' lu       NONZERO                   200'
-  nl_abs_tol = 1e-5
+  nl_rel_tol = 1e-2
+  nl_abs_tol = 1e-4
   off_diagonals_in_auto_scaling = true #helps with convergence
-  compute_scaling_once = false #helps with convergence
+  #compute_scaling_once = false #helps with convergence
   [TimeStepper]
     type = IterationAdaptiveDT
-    dt = 1
+    dt = 0.1
   []
 []
 
